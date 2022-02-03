@@ -1,4 +1,4 @@
-defmodule PayloadValidator.DecimalSpecTest do
+defmodule PayloadValidator.MapSpecTest do
   alias PayloadValidator.SpecError
   alias PayloadValidator.MapSpec
   alias PayloadValidator.StringSpec

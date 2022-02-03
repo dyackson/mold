@@ -53,10 +53,19 @@ defmodule PayloadValidator.Spec do
       end
 
     with :ok <- check_spec(spec),
-         :ok <- apply(spec_module, :check_spec, [spec]) do
+         {:ok, spec} <- apply_module_check_spec(spec_module, spec) do
       spec
     else
       {:error, msg} -> raise SpecError.new("for #{fun_id}, #{msg}")
+    end
+  end
+
+  defp apply_module_check_spec(spec_module, spec) do
+    case apply(spec_module, :check_spec, [spec]) do
+      :ok -> {:ok, spec}
+      # the module transformed the spec
+      {:ok, spec} -> {:ok, spec}
+      {:error, msg} -> {:error, msg}
     end
   end
 
