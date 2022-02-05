@@ -31,6 +31,9 @@ defmodule PayloadValidator.StringSpecTest do
                  enum_vals: enum_vals,
                  case_insensative: true
                }
+
+      assert %StringSpec{and: and_fn} = string(and: fn it -> String.length(it) > 4 end)
+      assert is_function(and_fn)
     end
 
     test "creates a string spec with regex" do
@@ -79,6 +82,12 @@ defmodule PayloadValidator.StringSpecTest do
                    fn ->
                      string(regex: ~r/foo/, enum_vals: ["a", "b"])
                    end
+
+      assert_raise SpecError,
+                   "for #{fun_name}, and opt must be a function",
+                   fn ->
+                     string(and: "something")
+                   end
     end
   end
 
@@ -90,7 +99,7 @@ defmodule PayloadValidator.StringSpecTest do
       assert conform(nil, string()) == {:error, "cannot be nil"}
     end
 
-    test "checks a values against a enum_vals" do
+    test "checks a values against enum_vals" do
       enum_vals = ~w[a b]
       assert conform("a", string(enum_vals: enum_vals)) == :ok
 
@@ -111,6 +120,44 @@ defmodule PayloadValidator.StringSpecTest do
 
       assert conform("fool", string(regex: regex)) == :ok
       assert conform("ofoo", string(regex: regex)) == {:error, "must match regex: ^foo"}
+    end
+
+    test "checks a value against a StringSpec and against an 'and' function" do
+      assert conform("fool", string(and: &(String.length(&1) < 10))) == :ok
+
+      assert conform(
+               "fool",
+               string(
+                 and: fn it ->
+                   if String.length(it) < 10, do: :ok, else: {:error, "too long"}
+                 end
+               )
+             ) == :ok
+
+      assert conform("fool", string(and: &(String.length(&1) < 3))) == {:error, "invalid"}
+
+      assert conform(
+               "fool",
+               string(
+                 and: fn it ->
+                   if String.length(it) < 3, do: :ok, else: {:error, "too long"}
+                 end
+               )
+             ) == {:error, "too long"}
+
+      assert conform(
+               "fool",
+               string(
+                 and: fn it ->
+                   if String.length(it) < 3, do: :ok, else: "too long"
+                 end
+               )
+             ) == {:error, "too long"}
+    end
+
+    test "checks the 'and' only if the other validations pass" do
+      assert conform(4, string(and: &(String.length(&1) < 10))) == {:error, "must be a string"}
+      assert conform(nil, string(and: &(String.length(&1) < 10))) == {:error, "cannot be nil"}
     end
   end
 end

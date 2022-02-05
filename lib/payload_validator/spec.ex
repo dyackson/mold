@@ -2,9 +2,10 @@ defmodule PayloadValidator.Spec do
   alias PayloadValidator.SpecError
   alias PayloadValidator.SpecBehavior
 
-  @base_fields [required: false, nullable: false]
+  @base_fields [required: false, nullable: false, and: nil]
 
   defmacro __using__(opts \\ []) do
+    alias PayloadValidator.Spec
     conform_fn_name = Keyword.get(opts, :conform_fn_name, :new)
     fields = Keyword.get(opts, :fields, [])
     fields = fields ++ @base_fields
@@ -19,6 +20,14 @@ defmodule PayloadValidator.Spec do
 
       def conform(nil, %__MODULE__{nullable: true}), do: :ok
       def conform(nil, %__MODULE__{nullable: false}), do: {:error, "cannot be nil"}
+
+      def conform(val, %__MODULE__{and: and_fn} = spec) when is_function(and_fn) do
+        # first conform according to the module, then test the value agaist the :and function only if successful
+        case conform(val, Map.delete(spec, :and)) do
+          :ok -> Spec.apply_and_fn(and_fn, val)
+          {:error, msg} -> {:error, msg}
+        end
+      end
     end
   end
 
@@ -27,6 +36,9 @@ defmodule PayloadValidator.Spec do
 
   def check_spec(%{nullable: nullable}) when not is_boolean(nullable),
     do: {:error, "nullable must be a boolean"}
+
+  def check_spec(%{and: and_opt}) when not is_nil(and_opt) and not is_function(and_opt),
+    do: {:error, "and opt must be a function"}
 
   def check_spec(%{}), do: :ok
 
@@ -86,6 +98,16 @@ defmodule PayloadValidator.Spec do
         Enum.map(error_map, fn {path, error_msg} when is_list(path) and is_binary(error_msg) ->
           {[key | path], error_msg}
         end)
+    end
+  end
+
+  def apply_and_fn(fun, val) do
+    case fun.(val) do
+      :ok -> :ok
+      true -> :ok
+      false -> {:error, "invalid"}
+      msg when is_binary(msg) -> {:error, msg}
+      {:error, msg} when is_binary(msg) -> {:error, msg}
     end
   end
 end

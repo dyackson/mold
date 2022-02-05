@@ -155,8 +155,11 @@ defmodule PayloadValidator.DecimalSpecTest do
       assert conform(".123", decimal(max_decimal_places: 3)) == :ok
       assert conform("4.123", decimal(max_decimal_places: 3)) == :ok
 
-      assert conform("5.0", decimal(max_decimal_places: 0)) == {:error, "cannot have more than 0 digits after the decimal point"}
-      assert conform("5.123", decimal(max_decimal_places: 2)) == {:error, "cannot have more than 2 digits after the decimal point"}
+      assert conform("5.0", decimal(max_decimal_places: 0)) ==
+               {:error, "cannot have more than 0 digits after the decimal point"}
+
+      assert conform("5.123", decimal(max_decimal_places: 2)) ==
+               {:error, "cannot have more than 2 digits after the decimal point"}
     end
   end
 end
