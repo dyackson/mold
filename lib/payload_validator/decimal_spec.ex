@@ -1,11 +1,17 @@
 defmodule PayloadValidator.DecimalSpec do
   use PayloadValidator.Spec,
     conform_fn_name: :decimal,
-    fields: [:gt, :lt, :gte, :lte]
+    fields: [:gt, :lt, :gte, :lte, :max_decimal_places]
 
   # Uses a regex rather than Decimal.parse/1, to avoid excepting scientific notation.
   @decimal_regex ~r/^\s*\d*\.?\d+\s*$/
   @error_msg "must be a decimal-formatted string or an integer"
+
+  def check_spec(%__MODULE__{max_decimal_places: max_decimal_places})
+      when (not is_integer(max_decimal_places) and not is_nil(max_decimal_places)) or
+             (is_integer(max_decimal_places) and max_decimal_places < 0) do
+    {:error, "max_decimal_places must be a non-negative integer"}
+  end
 
   def check_spec(%__MODULE__{gt: gt, gte: gte}) when not is_nil(gt) and not is_nil(gte) do
     {:error, "cannot specify both gt and gte"}
@@ -82,6 +88,7 @@ defmodule PayloadValidator.DecimalSpec do
 
   def conform(val, %__MODULE__{} = spec) when is_binary(val) do
     with :ok <- conform_regex(val),
+         :ok <- conform_max_decimal_places(val, spec.max_decimal_places),
          :ok <- conform_bounds(val, spec) do
       :ok
     else
@@ -96,6 +103,22 @@ defmodule PayloadValidator.DecimalSpec do
       :ok
     else
       @error_msg
+    end
+  end
+
+  defp conform_max_decimal_places(_val, nil), do: :ok
+
+  defp conform_max_decimal_places(val, max) do
+    regex =
+      case max do
+        0 -> ~r/^\s*\d+\s*$/
+        _ -> Regex.compile!("^\\s*\\d*\\.?\\d{1,#{max}}\\s*$")
+      end
+
+    if Regex.match?(regex, val) do
+      :ok
+    else
+      "cannot have more than #{max} digits after the decimal point"
     end
   end
 

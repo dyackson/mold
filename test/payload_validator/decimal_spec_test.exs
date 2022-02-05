@@ -26,6 +26,10 @@ defmodule PayloadValidator.DecimalSpecTest do
                nullable: true,
                required: true
              }
+
+      assert decimal(max_decimal_places: 0) == %DecimalSpec{max_decimal_places: 0}
+
+      assert decimal(max_decimal_places: 3) == %DecimalSpec{max_decimal_places: 3}
     end
 
     test "coerces valid bound field to Decimal" do
@@ -72,6 +76,16 @@ defmodule PayloadValidator.DecimalSpecTest do
                    fn ->
                      decimal(lte: :infinity)
                    end
+    end
+
+    test "raises if given a bad max_decimal_places opt" do
+      Enum.each(["5", %{}, -3], fn bad ->
+        assert_raise SpecError,
+                     "for #{@fun_name}, max_decimal_places must be a non-negative integer",
+                     fn ->
+                       decimal(max_decimal_places: bad)
+                     end
+      end)
     end
 
     test "raises the combination of bound opts don't make sense" do
@@ -132,6 +146,17 @@ defmodule PayloadValidator.DecimalSpecTest do
       assert conform(5, decimal(gt: 5)) == {:error, "must be greater than 5"}
 
       assert conform("5.00", decimal(gte: "5.00")) == :ok
+    end
+
+    test "checks a value against a decimal spec with max_decimal_places" do
+      assert conform(5, decimal(max_decimal_places: 0)) == :ok
+      assert conform(5, decimal(max_decimal_places: 3)) == :ok
+      assert conform("5", decimal(max_decimal_places: 3)) == :ok
+      assert conform(".123", decimal(max_decimal_places: 3)) == :ok
+      assert conform("4.123", decimal(max_decimal_places: 3)) == :ok
+
+      assert conform("5.0", decimal(max_decimal_places: 0)) == {:error, "cannot have more than 0 digits after the decimal point"}
+      assert conform("5.123", decimal(max_decimal_places: 2)) == {:error, "cannot have more than 2 digits after the decimal point"}
     end
   end
 end
