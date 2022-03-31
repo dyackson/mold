@@ -5,7 +5,7 @@ defmodule PayloadValidator.StringSpec do
 
   def check_spec(%__MODULE__{enum_vals: enum_vals, regex: regex})
       when not is_nil(regex) and not is_nil(enum_vals),
-      do: {:error, ":enum_vals and regex are not allowed together"}
+      do: {:error, ":enum_vals and :regex are not allowed together"}
 
   def check_spec(%__MODULE__{enum_vals: enum_vals, case_insensative: case_insensative})
       when not is_nil(case_insensative) and is_nil(enum_vals),

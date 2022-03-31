@@ -17,15 +17,15 @@ defmodule PayloadValidator.AnySpecTest do
     test "raises if given bad opts" do
       fun_name = "PayloadValidator.AnySpec.any/1"
 
-      assert_raise SpecError, "for #{fun_name}, required must be a boolean", fn ->
+      assert_raise SpecError, "for #{fun_name}, :required must be a boolean", fn ->
         any(required: "foo")
       end
 
-      assert_raise SpecError, "for #{fun_name}, nullable must be a boolean", fn ->
+      assert_raise SpecError, "for #{fun_name}, :nullable must be a boolean", fn ->
         any(nullable: nil)
       end
 
-      assert_raise SpecError, "for #{fun_name}, unknown is not an option", fn ->
+      assert_raise SpecError, "for #{fun_name}, :unknown is not an option", fn ->
         any(unknown: nil)
       end
     end

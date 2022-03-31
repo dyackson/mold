@@ -28,39 +28,39 @@ defmodule PayloadValidator.MapSpecTest do
     test "raises if given bad opts" do
       fun_name = "PayloadValidator.MapSpec.map/1"
 
-      assert_raise SpecError, "for #{fun_name}, required must be a boolean", fn ->
+      assert_raise SpecError, "for #{fun_name}, :required must be a boolean", fn ->
         map(required: "foo")
       end
 
-      assert_raise SpecError, "for #{fun_name}, nullable must be a boolean", fn ->
+      assert_raise SpecError, "for #{fun_name}, :nullable must be a boolean", fn ->
         map(nullable: nil)
       end
 
       assert_raise SpecError,
-                   "for #{fun_name}, fields must be a map of field names to specs",
+                   "for #{fun_name}, :fields must be a map of field names to specs",
                    fn ->
                      map(fields: nil)
                    end
 
       assert_raise SpecError,
-                   "for #{fun_name}, fields must be a map of field names to specs",
+                   "for #{fun_name}, :fields must be a map of field names to specs",
                    fn ->
                      map(fields: [])
                    end
 
       assert_raise SpecError,
-                   "for #{fun_name}, fields must be a map of field names to specs",
+                   "for #{fun_name}, :fields must be a map of field names to specs",
                    fn ->
                      map(fields: %{foo: %{nullable: true}})
                    end
 
       assert_raise SpecError,
-                   "for #{fun_name}, fields must be a map of field names to specs",
+                   "for #{fun_name}, :fields must be a map of field names to specs",
                    fn ->
                      map(fields: %{foo: true})
                    end
 
-      assert_raise SpecError, "for #{fun_name}, bad_opt is not an option", fn ->
+      assert_raise SpecError, "for #{fun_name}, :bad_opt is not an option", fn ->
         map(bad_opt: true)
       end
     end

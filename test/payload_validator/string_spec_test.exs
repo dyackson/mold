@@ -57,28 +57,28 @@ defmodule PayloadValidator.StringSpecTest do
         string(nullable: nil)
       end
 
-      assert_raise SpecError, "for #{fun_name}, enum_vals must be a list", fn ->
+      assert_raise SpecError, "for #{fun_name}, :enum_vals must be a list", fn ->
         string(enum_vals: "foo")
       end
 
-      assert_raise SpecError, "for #{fun_name}, enum_vals cannot be empty", fn ->
+      assert_raise SpecError, "for #{fun_name}, :enum_vals cannot be empty", fn ->
         string(enum_vals: [])
       end
 
-      assert_raise SpecError, "for #{fun_name}, case_insensative must be a boolean", fn ->
+      assert_raise SpecError, "for #{fun_name}, :case_insensative must be a boolean", fn ->
         string(enum_vals: ["1", "2"], case_insensative: "foo")
       end
 
-      assert_raise SpecError, "for #{fun_name}, enum_vals can only contain strings", fn ->
+      assert_raise SpecError, "for #{fun_name}, :enum_vals can only contain strings", fn ->
         string(case_insensative: true, enum_vals: [:ea, 1])
       end
 
-      assert_raise SpecError, "for #{fun_name}, regex must be a Regex", fn ->
+      assert_raise SpecError, "for #{fun_name}, :regex must be a Regex", fn ->
         string(regex: "foo")
       end
 
       assert_raise SpecError,
-                   "for #{fun_name}, enum_vals and regex are not allowed together",
+                   "for #{fun_name}, :enum_vals and :regex are not allowed together",
                    fn ->
                      string(regex: ~r/foo/, enum_vals: ["a", "b"])
                    end

@@ -77,7 +77,7 @@ defmodule PayloadValidator.DecimalSpec do
   end
 
   defp bad_bound_msg(comparison),
-    do: "#{Atom.to_string(comparison)} must be an integer, decimal-formatted string, or Decimal"
+    do: ":#{comparison} must be an integer, decimal-formatted string, or Decimal"
 
   def conform(val, %__MODULE__{} = spec) when is_integer(val) do
     case conform_bounds(val, spec) do

@@ -22,11 +22,11 @@ defmodule PayloadValidator.IntegerSpecTest do
     test "raises if given bad opts" do
       fun_name = "PayloadValidator.IntegerSpec.integer/1"
 
-      assert_raise SpecError, "for #{fun_name}, required must be a boolean", fn ->
+      assert_raise SpecError, "for #{fun_name}, :required must be a boolean", fn ->
         integer(required: "foo")
       end
 
-      assert_raise SpecError, "for #{fun_name}, nullable must be a boolean", fn ->
+      assert_raise SpecError, "for #{fun_name}, :nullable must be a boolean", fn ->
         integer(nullable: nil)
       end
     end
