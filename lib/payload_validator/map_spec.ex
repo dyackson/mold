@@ -5,13 +5,13 @@ defmodule PayloadValidator.MapSpec do
 
   alias PayloadValidator.Spec
 
-  @bad_fields_msg "fields must be a map of field names to specs"
+  @bad_fields_msg ":fields must be a map of field names to specs"
 
   def check_spec(%__MODULE__{fields: fields}) when not is_map(fields),
     do: {:error, @bad_fields_msg}
 
   def check_spec(%__MODULE__{exclusive: exclusive}) when not is_boolean(exclusive),
-    do: {:error, "exclusive must be a boolean"}
+    do: {:error, ":exclusive must be a boolean"}
 
   def check_spec(%__MODULE__{fields: fields}) do
     good =

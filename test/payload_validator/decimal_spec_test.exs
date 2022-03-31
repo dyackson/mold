@@ -45,34 +45,34 @@ defmodule PayloadValidator.DecimalSpecTest do
     end
 
     test "raises if given bad opts" do
-      assert_raise SpecError, "for #{@fun_name}, required must be a boolean", fn ->
+      assert_raise SpecError, "for #{@fun_name}, :required must be a boolean", fn ->
         decimal(required: "foo")
       end
 
-      assert_raise SpecError, "for #{@fun_name}, nullable must be a boolean", fn ->
+      assert_raise SpecError, "for #{@fun_name}, :nullable must be a boolean", fn ->
         decimal(nullable: nil)
       end
 
       assert_raise SpecError,
-                   "for #{@fun_name}, gt must be an integer, decimal-formatted string, or Decimal",
+                   "for #{@fun_name}, :gt must be an integer, decimal-formatted string, or Decimal",
                    fn ->
                      decimal(gt: "foo")
                    end
 
       assert_raise SpecError,
-                   "for #{@fun_name}, gte must be an integer, decimal-formatted string, or Decimal",
+                   "for #{@fun_name}, :gte must be an integer, decimal-formatted string, or Decimal",
                    fn ->
                      decimal(gte: false)
                    end
 
       assert_raise SpecError,
-                   "for #{@fun_name}, lt must be an integer, decimal-formatted string, or Decimal",
+                   "for #{@fun_name}, :lt must be an integer, decimal-formatted string, or Decimal",
                    fn ->
                      decimal(lt: "12foo")
                    end
 
       assert_raise SpecError,
-                   "for #{@fun_name}, lte must be an integer, decimal-formatted string, or Decimal",
+                   "for #{@fun_name}, :lte must be an integer, decimal-formatted string, or Decimal",
                    fn ->
                      decimal(lte: :infinity)
                    end
@@ -81,7 +81,7 @@ defmodule PayloadValidator.DecimalSpecTest do
     test "raises if given a bad max_decimal_places opt" do
       Enum.each(["5", %{}, -3], fn bad ->
         assert_raise SpecError,
-                     "for #{@fun_name}, max_decimal_places must be a non-negative integer",
+                     "for #{@fun_name}, :max_decimal_places must be a non-negative integer",
                      fn ->
                        decimal(max_decimal_places: bad)
                      end
@@ -89,39 +89,39 @@ defmodule PayloadValidator.DecimalSpecTest do
     end
 
     test "raises the combination of bound opts don't make sense" do
-      assert_raise SpecError, "for #{@fun_name}, cannot specify both gt and gte", fn ->
+      assert_raise SpecError, "for #{@fun_name}, cannot specify both :gt and :gte", fn ->
         decimal(gt: 5, gte: 6)
       end
 
-      assert_raise SpecError, "for #{@fun_name}, cannot specify both lt and lte", fn ->
+      assert_raise SpecError, "for #{@fun_name}, cannot specify both :lt and :lte", fn ->
         decimal(lt: 5, lte: 5)
       end
 
-      assert_raise SpecError, "for #{@fun_name}, gt must be less than lt", fn ->
+      assert_raise SpecError, "for #{@fun_name}, :gt must be less than :lt", fn ->
         decimal(gt: 5, lt: 5)
       end
 
-      assert_raise SpecError, "for #{@fun_name}, gt must be less than lt", fn ->
+      assert_raise SpecError, "for #{@fun_name}, :gt must be less than :lt", fn ->
         decimal(gt: 6, lt: 5)
       end
 
-      assert_raise SpecError, "for #{@fun_name}, gte must be less than lt", fn ->
+      assert_raise SpecError, "for #{@fun_name}, :gte must be less than :lt", fn ->
         decimal(gte: 5, lt: 5)
       end
 
-      assert_raise SpecError, "for #{@fun_name}, gte must be less than lt", fn ->
+      assert_raise SpecError, "for #{@fun_name}, :gte must be less than :lt", fn ->
         decimal(gte: 6, lt: 5)
       end
 
-      assert_raise SpecError, "for #{@fun_name}, gt must be less than lte", fn ->
+      assert_raise SpecError, "for #{@fun_name}, :gt must be less than :lte", fn ->
         decimal(gt: 5, lte: 5)
       end
 
-      assert_raise SpecError, "for #{@fun_name}, gt must be less than lte", fn ->
+      assert_raise SpecError, "for #{@fun_name}, :gt must be less than :lte", fn ->
         decimal(gt: 6, lte: 5)
       end
 
-      assert_raise SpecError, "for #{@fun_name}, gte must be less than or equal to lte", fn ->
+      assert_raise SpecError, "for #{@fun_name}, :gte must be less than or equal to :lte", fn ->
         decimal(gte: 6, lte: 5)
       end
     end

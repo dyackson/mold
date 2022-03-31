@@ -10,15 +10,15 @@ defmodule PayloadValidator.DecimalSpec do
   def check_spec(%__MODULE__{max_decimal_places: max_decimal_places})
       when (not is_integer(max_decimal_places) and not is_nil(max_decimal_places)) or
              (is_integer(max_decimal_places) and max_decimal_places < 0) do
-    {:error, "max_decimal_places must be a non-negative integer"}
+    {:error, ":max_decimal_places must be a non-negative integer"}
   end
 
   def check_spec(%__MODULE__{gt: gt, gte: gte}) when not is_nil(gt) and not is_nil(gte) do
-    {:error, "cannot specify both gt and gte"}
+    {:error, "cannot specify both :gt and :gte"}
   end
 
   def check_spec(%__MODULE__{lt: lt, lte: lte}) when not is_nil(lt) and not is_nil(lte) do
-    {:error, "cannot specify both lt and lte"}
+    {:error, "cannot specify both :lt and :lte"}
   end
 
   def check_spec(%__MODULE__{} = spec) do
@@ -29,22 +29,22 @@ defmodule PayloadValidator.DecimalSpec do
       case spec do
         %{gt: gt, lt: lt} when not is_nil(gt) and not is_nil(lt) ->
           if not Decimal.lt?(gt, lt),
-            do: {:error, "gt must be less than lt"},
+            do: {:error, ":gt must be less than :lt"},
             else: {:ok, spec}
 
         %{gt: gt, lte: lte} when not is_nil(gt) and not is_nil(lte) ->
           if not Decimal.lt?(gt, lte),
-            do: {:error, "gt must be less than lte"},
+            do: {:error, ":gt must be less than :lte"},
             else: {:ok, spec}
 
         %{gte: gte, lt: lt} when not is_nil(gte) and not is_nil(lt) ->
           if not Decimal.lt?(gte, lt),
-            do: {:error, "gte must be less than lt"},
+            do: {:error, ":gte must be less than :lt"},
             else: {:ok, spec}
 
         %{gte: gte, lte: lte} when not is_nil(gte) and not is_nil(lte) ->
           if Decimal.gt?(gte, lte),
-            do: {:error, "gte must be less than or equal to lte"},
+            do: {:error, ":gte must be less than or equal to :lte"},
             else: {:ok, spec}
 
         spec ->

@@ -32,13 +32,13 @@ defmodule PayloadValidator.Spec do
   end
 
   def check_spec(%{required: required}) when not is_boolean(required),
-    do: {:error, "required must be a boolean"}
+    do: {:error, ":required must be a boolean"}
 
   def check_spec(%{nullable: nullable}) when not is_boolean(nullable),
-    do: {:error, "nullable must be a boolean"}
+    do: {:error, ":nullable must be a boolean"}
 
   def check_spec(%{and: and_opt}) when not is_nil(and_opt) and not is_function(and_opt),
-    do: {:error, "and opt must be a function"}
+    do: {:error, ":and must be a function"}
 
   def check_spec(%{}), do: :ok
 
@@ -61,7 +61,7 @@ defmodule PayloadValidator.Spec do
       try do
         struct!(spec_module, opts)
       rescue
-        e in KeyError -> raise(SpecError.new("for #{fun_id}, #{e.key} is not an option"))
+        e in KeyError -> raise(SpecError.new("for #{fun_id}, :#{e.key} is not an option"))
       end
 
     with :ok <- check_spec(spec),

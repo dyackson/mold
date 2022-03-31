@@ -49,11 +49,11 @@ defmodule PayloadValidator.StringSpecTest do
     test "raises if given bad opts" do
       fun_name = "PayloadValidator.StringSpec.string/1"
 
-      assert_raise SpecError, "for #{fun_name}, required must be a boolean", fn ->
+      assert_raise SpecError, "for #{fun_name}, :required must be a boolean", fn ->
         string(required: "foo")
       end
 
-      assert_raise SpecError, "for #{fun_name}, nullable must be a boolean", fn ->
+      assert_raise SpecError, "for #{fun_name}, :nullable must be a boolean", fn ->
         string(nullable: nil)
       end
 
@@ -84,9 +84,15 @@ defmodule PayloadValidator.StringSpecTest do
                    end
 
       assert_raise SpecError,
-                   "for #{fun_name}, and opt must be a function",
+                   "for #{fun_name}, :and must be a function",
                    fn ->
                      string(and: "something")
+                   end
+
+      assert_raise SpecError,
+                   "for #{fun_name}, :fart is not an option",
+                   fn ->
+                     string(fart: "something")
                    end
     end
   end

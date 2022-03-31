@@ -1,4 +1,5 @@
 defmodule PayloadValidator do
+
   @moduledoc """
   Documentation for `PayloadValidator`.
   """

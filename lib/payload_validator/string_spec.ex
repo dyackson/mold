@@ -5,33 +5,33 @@ defmodule PayloadValidator.StringSpec do
 
   def check_spec(%__MODULE__{enum_vals: enum_vals, regex: regex})
       when not is_nil(regex) and not is_nil(enum_vals),
-      do: {:error, "enum_vals and regex are not allowed together"}
+      do: {:error, ":enum_vals and regex are not allowed together"}
 
   def check_spec(%__MODULE__{enum_vals: enum_vals, case_insensative: case_insensative})
       when not is_nil(case_insensative) and is_nil(enum_vals),
-      do: {:error, "case_insensative is only allowed with enum_vals"}
+      do: {:error, ":case_insensative is only allowed with enum_vals"}
 
   def check_spec(%__MODULE__{case_insensative: case_insensative})
       when not is_boolean(case_insensative) and not is_nil(case_insensative),
-      do: {:error, "case_insensative must be a boolean"}
+      do: {:error, ":case_insensative must be a boolean"}
 
   def check_spec(%__MODULE__{enum_vals: enum_vals})
       when not is_list(enum_vals) and not is_nil(enum_vals),
-      do: {:error, "enum_vals must be a list"}
+      do: {:error, ":enum_vals must be a list"}
 
-  def check_spec(%__MODULE__{enum_vals: []}), do: {:error, "enum_vals cannot be empty"}
+  def check_spec(%__MODULE__{enum_vals: []}), do: {:error, ":enum_vals cannot be empty"}
 
   def check_spec(%__MODULE__{enum_vals: enum_vals}) when is_list(enum_vals) do
     if Enum.all?(enum_vals, &is_binary(&1)),
       do: :ok,
-      else: {:error, "enum_vals can only contain strings"}
+      else: {:error, ":enum_vals can only contain strings"}
   end
 
   def check_spec(%__MODULE__{regex: regex}) do
     case regex do
       nil -> :ok
       %Regex{} -> :ok
-      _ -> {:error, "regex must be a Regex"}
+      _ -> {:error, ":regex must be a Regex"}
     end
   end
 
