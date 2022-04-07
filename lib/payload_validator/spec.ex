@@ -14,7 +14,6 @@ defmodule PayloadValidator.Spec do
       defstruct unquote(fields)
 
       @behaviour SpecBehavior
-
       def unquote(conform_fn_name)(opts \\ []),
         do: PayloadValidator.Spec.create_spec(__MODULE__, unquote(conform_fn_name), opts)
 
@@ -44,6 +43,7 @@ defmodule PayloadValidator.Spec do
 
   def is_spec?(val) do
     is_map(val) and Map.has_key?(val, :__struct__) and
+      check_spec(val) == :ok and
       Map.has_key?(val, :nullable) and
       Map.has_key?(val, :required) and
       Kernel.function_exported?(val.__struct__, :check_spec, 1) and
