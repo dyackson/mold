@@ -1,5 +1,6 @@
 defmodule PayloadValidator.SpexTest do
-  # alias PayloadValidator.SpecError
+  alias PayloadValidator.SpecError
+  alias PayloadValidator.Spex
   alias PayloadValidator.Spex.String, as: Str
 
   # import Str
@@ -12,26 +13,90 @@ defmodule PayloadValidator.SpexTest do
   describe "StringSpec.string/1" do
     test "creates a string spec" do
       assert Str.new() == %Str{nullable: false}
-      assert Str.new(foo: "bar") == %Str{nullable: false}
-      # assert Str.new(required: true, nullable: true) == %Str{nullable: true}
+      assert Str.new(nullable: false) == %Str{nullable: false}
+      assert Str.new(regex: ~r/^\d+$/) == %Str{nullable: false, regex: ~r/^\d+$/}
+
+      assert %Str{nullable: false, and: and_fn} =
+               Str.new(nullable: false, and: fn str -> String.contains?(str, "x") end)
+
+      assert is_function(and_fn, 1)
+
+      assert_raise SpecError, ":and must be a 1-arity function, got \"foo\"", fn ->
+        Str.new(nullable: false, and: "foo")
+      end
+
+      assert_raise SpecError, ~r/and must be a 1-arity function, got/, fn ->
+        Str.new(nullable: false, and: fn _x, _y  -> nil end)
+      end
+
+      assert_raise SpecError, ":nullable must be a boolean, got \"foo\"", fn ->
+        Str.new(nullable: "foo")
+      end
+
+      assert_raise SpecError, ":foo is not a field of PayloadValidator.Spex.String", fn ->
+        Str.new(foo: "bar")
+      end
+
+      assert_raise SpecError, ":regex must be a Regex", fn ->
+        Str.new(regex: "bar")
+      end
     end
 
-    #   test "creates a string spec with enum_vals" do
-    #     enum_vals = ["a", "b"]
+    test "validates values" do
+      spec = Str.new()
+      assert :ok = Spex.validate("foo", spec)
+      assert {:error, "cannot be nil"} = Spex.validate(nil, spec)
+      assert {:error, "must be a string"} = Spex.validate(5, spec)
 
-    #     assert string(enum_vals: enum_vals) == %StringSpec{
-    #              nullable: false,
-    #              required: false,
-    #              enum_vals: enum_vals
+      nullable_spec = Str.new(nullable: true)
+      assert :ok = Spex.validate("foo", nullable_spec)
+      assert :ok = Spex.validate(nil, nullable_spec)
+
+      re_spec = Str.new(regex: ~r/^\d+$/)
+      assert :ok = Spex.validate("1", re_spec)
+      assert {:error, "cannot be nil"} = Spex.validate(nil, re_spec)
+
+      and_spec = Str.new(nullable: false, and: fn str -> String.contains?(str, "x") end)
+      assert :ok = Spex.validate("box", and_spec)
+      assert {:error, "invalid"} = Spex.validate("bocks", and_spec)
+
+      nullable_and_spec = Str.new(nullable: true, and: fn str -> String.contains?(str, "x") end)
+      assert :ok = Spex.validate(nil, nullable_and_spec)
+      assert {:error, "invalid"} = Spex.validate("bocks", nullable_and_spec)
+
+      # TODO: implement and test min_len, max_len, and enum_vals
+    end
+
+    test "various allowed return vals for and_fn" do
+      ret_ok = fn str ->
+        if String.contains?(str, "x"), do: :ok, else: {:error, "need an x"}
+      end
+
+      assert :ok = Spex.validate("box", Str.new(and: ret_ok))
+      assert {:error, "need an x"} = Spex.validate("bo", Str.new(and: ret_ok))
+
+      ret_bool = &String.contains?(&1, "x")
+      assert :ok = Spex.validate("box", Str.new(and: ret_bool))
+
+      assert {:error, "no good"} = Spex.validate("bo", Str.new(and: fn _str -> "no good" end))
+    end
+
+    # test "creates a string spec with enum_vals" do
+    #   enum_vals = ["a", "b"]
+
+    #   assert string(enum_vals: enum_vals) == %StringSpec{
+    #            nullable: false,
+    #            required: false,
+    #            enum_vals: enum_vals
+    #          }
+
+    #   assert string(required: true, nullable: true, case_insensative: true, enum_vals: enum_vals) ==
+    #            %StringSpec{
+    #              nullable: true,
+    #              required: true,
+    #              enum_vals: enum_vals,
+    #              case_insensative: true
     #            }
-
-    #     assert string(required: true, nullable: true, case_insensative: true, enum_vals: enum_vals) ==
-    #              %StringSpec{
-    #                nullable: true,
-    #                required: true,
-    #                enum_vals: enum_vals,
-    #                case_insensative: true
-    #              }
 
     #     assert %StringSpec{and: and_fn} = string(and: fn it -> String.length(it) > 4 end)
     #     assert is_function(and_fn)

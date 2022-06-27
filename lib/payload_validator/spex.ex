@@ -9,28 +9,39 @@ defmodule PayloadValidator.Spex do
       defstruct unquote(fields)
 
       def new(opts \\ []) do
-        with {:ok, spec} <- PayloadValidator.Spex.create_spec(__MODULE__, opts),
-             {:ok, spec} <- PayloadValidator.Spex.validate_nullable(spec) do
-          case PayloadValidator.SpexProtocol.validate_spec(spec) do
-            {:error, reason} -> raise PayloadValidator.SpecError.new(reason)
-            :ok -> spec
-            %__MODULE__{} = transformed_spec -> transformed_spec
-          end
+        with {:ok, spec} <- PayloadValidator.Spex.create_spec(__MODULE__, opts) ,
+             {:ok, spec} <- PayloadValidator.Spex.validate_base_fields(spec),
+             {:ok, spec} <- PayloadValidator.Spex.wrap_validate_spec(__MODULE__, spec) do
+          spec
+        else
+          {:error, reason} -> raise PayloadValidator.SpecError.new(reason)
         end
       end
     end
   end
 
-  def validate_nullable(%{nullable: val}) when not is_boolean(val),
-    do: {:error, ":nullable must be a boolean, got #{val}"}
+  def wrap_validate_spec(module, spec) do
+    case PayloadValidator.SpexProtocol.validate_spec(spec) do
+      :ok -> {:ok, spec}
+      # this gives the implementation a chance to transform the spec
+      {:ok, %^module{} = spec} -> {:ok, spec}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
-  def validate_nullable(spec), do: {:ok, spec}
+  def validate_base_fields(%{nullable: val}) when not is_boolean(val),
+    do: {:error, ":nullable must be a boolean, got #{inspect(val)}"}
+
+  def validate_base_fields(%{and: and_fn}) when not is_nil(and_fn) and not is_function(and_fn, 1),
+    do: {:error, ":and must be a 1-arity function, got #{inspect(and_fn)}"}
+
+  def validate_base_fields(spec), do: {:ok, spec}
 
   def create_spec(module, opts) do
     try do
       {:ok, struct!(module, opts)}
     rescue
-      e in KeyError -> {:error, "#{e.key} is not a field"}
+      e in KeyError -> {:error, "#{inspect(e.key)} is not a field of #{inspect(module)}"}
     end
   end
 
@@ -81,9 +92,10 @@ defmodule PayloadValidator.Spex.String do
 end
 
 defimpl PayloadValidator.SpexProtocol, for: PayloadValidator.Spex.String do
-  def validate_spec(%{regex: regex}) do
+  # TODO: add enum vals
+  def validate_spec(%{regex: regex} = spec) do
     case regex do
-      nil -> :ok
+      nil -> {:ok, spec}
       %Regex{} -> :ok
       _ -> {:error, ":regex must be a Regex"}
     end
