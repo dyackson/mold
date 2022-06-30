@@ -2,6 +2,8 @@ defmodule PayloadValidator.SpexTest do
   alias PayloadValidator.SpecError
   alias PayloadValidator.Spex
   alias PayloadValidator.Spex.String, as: Str
+  alias PayloadValidator.Spex.Boolean, as: Bool
+  alias PayloadValidator.Spex.Integer, as: Int
 
   # import Str
 
@@ -10,7 +12,134 @@ defmodule PayloadValidator.SpexTest do
   # TODO: figure out what this is
   doctest PayloadValidator
 
-  describe "StringSpec.string/1" do
+  describe "Spex.Map" do
+    test "creates a map spec" do
+      assert Spex.Map.new() == %Spex.Map{
+               nullable: false,
+               required: %{},
+               optional: %{},
+               exclusive: false,
+               and: nil
+             }
+
+      assert Spex.Map.new(nullable: true) == %Spex.Map{nullable: true}
+    end
+
+    test "validate with a map Spec" do
+      spec =
+        Spex.Map.new(
+          required: [my_str: Str.new(), my_int: Int.new()],
+          optional: %{my_bool: Bool.new(nullable: true)}
+        )
+
+      assert :ok = Spex.validate(%{my_str: "foo", my_int: 1}, spec)
+      assert :ok = Spex.validate(%{my_str: "foo", my_int: 1, my_bool: true}, spec)
+      assert :ok = Spex.validate(%{my_str: "foo", my_int: 1, my_bool: nil}, spec)
+      assert :ok = Spex.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, spec)
+
+      assert Spex.validate(%{my_str: "foo"}, spec) == {:error, %{[:my_int] => "is required"}}
+
+      assert Spex.validate(%{}, spec) ==
+               {:error, %{[:my_int] => "is required", [:my_str] => "is required"}}
+
+      assert Spex.validate(%{my_str: "foo", my_int: "foo"}, spec) ==
+               {:error, %{[:my_int] => "must be an integer"}}
+
+      assert Spex.validate(%{my_str: 1, my_int: "foo"}, spec) ==
+               {:error, %{[:my_int] => "must be an integer", [:my_str] => "must be a string"}}
+
+      assert Spex.validate(%{my_str: 1, my_int: "foo"}, spec) ==
+               {:error, %{[:my_int] => "must be an integer", [:my_str] => "must be a string"}}
+
+      assert Spex.validate(%{my_str: 1, my_int: "foo", my_bool: "foo"}, spec) ==
+               {:error,
+                %{
+                  [:my_int] => "must be an integer",
+                  [:my_str] => "must be a string",
+                  [:my_bool] => "must be a boolean"
+                }}
+
+      exclusive_spec = Map.put(spec, :exclusive, true)
+
+      assert Spex.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, exclusive_spec) ==
+               {:error, %{[:some_other_field] => "is not allowed"}}
+
+      empty_map_spec = Spex.Map.new()
+
+      assert :ok = Spex.validate(%{}, empty_map_spec)
+      assert :ok = Spex.validate(%{some_other_field: [1, 2, 3]}, empty_map_spec)
+      assert {:error, "cannot be nil"} = Spex.validate(nil, empty_map_spec)
+
+      assert Spex.validate(
+               %{some_other_field: [1, 2, 3]},
+               Map.put(empty_map_spec, :exclusive, true)
+             ) ==
+               {:error, %{[:some_other_field] => "is not allowed"}}
+    end
+
+    test "validate a nested map spec" do
+      nested_spec =
+        Spex.Map.new(
+          required: %{my_str: Str.new(), my_int: Int.new()},
+          optional: [my_bool: Bool.new(nullable: true)]
+        )
+
+      spec = Spex.Map.new(required: [nested: nested_spec])
+
+      :ok = Spex.validate(%{nested: %{my_int: 1, my_str: "foo"}}, spec)
+
+      assert Spex.validate(%{nested: %{my_str: "foo"}}, spec) ==
+               {:error, %{[:nested, :my_int] => "is required"}}
+
+      exclusive_spec = Map.put(spec, :exclusive, true)
+
+      map = %{nested: %{my_str: 1, my_bool: 1}, some_other_field: "foo"}
+
+      expected =
+        {:error,
+         %{
+           [:some_other_field] => "is not allowed",
+           [:nested, :my_str] => "must be a string",
+           [:nested, :my_int] => "is required",
+           [:nested, :my_bool] => "must be a boolean"
+         }}
+
+      assert Spex.validate(map, exclusive_spec) == expected
+    end
+  end
+
+  describe "Spex.Boolean" do
+    test "creates a boolean spec" do
+      assert Bool.new() == %Bool{nullable: false}
+      assert Bool.new(nullable: true) == %Bool{nullable: true}
+    end
+
+    test "validate with a boolean Spec" do
+      spec = Bool.new()
+      assert :ok = Spex.validate(false, spec)
+      assert {:error, "must be a boolean"} = Spex.validate("foo", spec)
+      assert {:error, "cannot be nil"} = Spex.validate(nil, spec)
+      assert :ok = Spex.validate(nil, Bool.new(nullable: true))
+    end
+  end
+
+  describe "Spex.Integer" do
+    test "creates as integer spec" do
+      IO.inspect(Int)
+      assert Int.new(nullable: true) == %Int{nullable: true}
+      assert Int.new() == %Int{nullable: false}
+    end
+
+    test "validate with an integer Spec" do
+      spec = Int.new()
+      assert :ok = Spex.validate(9, spec)
+      assert {:error, "must be an integer"} = Spex.validate("foo", spec)
+      assert {:error, "cannot be nil"} = Spex.validate(nil, spec)
+      assert :ok = Spex.validate(nil, Int.new(nullable: true))
+    end
+  end
+
+  describe "Spex.String" do
     test "creates a string spec" do
       assert Str.new() == %Str{nullable: false}
       assert Str.new(nullable: false) == %Str{nullable: false}
@@ -26,7 +155,7 @@ defmodule PayloadValidator.SpexTest do
       end
 
       assert_raise SpecError, ~r/and must be a 1-arity function, got/, fn ->
-        Str.new(nullable: false, and: fn _x, _y  -> nil end)
+        Str.new(nullable: false, and: fn _x, _y -> nil end)
       end
 
       assert_raise SpecError, ":nullable must be a boolean, got \"foo\"", fn ->
