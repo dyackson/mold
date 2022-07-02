@@ -271,3 +271,87 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Map do
     end
   end
 end
+
+defmodule PayloadValidator.Spex.List do
+  use PayloadValidator.Spex,
+    fields: [:of, :min_len, :max_len]
+end
+
+defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.List do
+  def validate_spec(%{min_len: min_len}) when not is_nil(min_len) and not (is_integer(min_len) and min_len >= 0),
+    do: {:error, ":min_len must be a non-negative integer"}
+
+  def validate_spec(%{max_len: max_len}) when not is_nil(max_len) and not (is_integer(max_len) and max_len >= 0),
+    do: {:error, ":max_len must be a non-negative integer"}
+
+  def validate_spec(%{min_len: min_len, max_len: max_len}) when is_integer(min_len) and is_integer(max_len) and min_len > max_len,
+    do: {:error, ":min_len cannot be greater than :max_len"}
+
+  def validate_spec(%{of: of}) do
+    if PayloadValidator.Spex.is_spec?(of), do: :ok, else: {:error, ":of is required and must be a spec"}
+  end
+
+  def validate_spec(_spec), do: :ok
+end
+
+defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.List do
+  def validate_val(%{} = _spec, val) when not is_list(val), do: {:error, "must be a list"}
+
+  def validate_val(%{required: required, optional: optional, exclusive: exclusive} = _spec, map) do
+    disallowed_field_errors =
+      if exclusive do
+        allowed_fields = Map.keys(required) ++ Map.keys(optional)
+
+        map
+        |> Map.drop(allowed_fields)
+        |> Map.keys()
+        |> Enum.map(fn field -> {[field], "is not allowed"} end)
+      else
+        []
+      end
+
+    required_field_names = required |> Map.keys() |> MapSet.new()
+    field_names = map |> Map.keys() |> MapSet.new()
+
+    missing_required_field_names = MapSet.difference(required_field_names, field_names)
+
+    missing_required_field_errors = Enum.map(missing_required_field_names, &{[&1], "is required"})
+
+    required_field_errors =
+      required
+      |> Enum.map(fn {field_name, spec} ->
+        if Map.has_key?(map, field_name) do
+          PayloadValidator.Spex.recurse(field_name, map[field_name], spec)
+        else
+          :ok
+        end
+      end)
+      |> Enum.filter(&(&1 != :ok))
+      |> List.flatten()
+
+    optional_field_errors =
+      optional
+      |> Enum.map(fn {field_name, spec} ->
+        if Map.has_key?(map, field_name) do
+          PayloadValidator.Spex.recurse(field_name, map[field_name], spec)
+        else
+          :ok
+        end
+      end)
+      |> Enum.filter(&(&1 != :ok))
+      |> List.flatten()
+
+    all_errors =
+      List.flatten([
+        disallowed_field_errors,
+        missing_required_field_errors,
+        required_field_errors,
+        optional_field_errors
+      ])
+
+    case all_errors do
+      [] -> :ok
+      errors when is_list(errors) -> {:error, Map.new(errors)}
+    end
+  end
+end

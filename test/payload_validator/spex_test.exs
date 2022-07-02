@@ -12,6 +12,60 @@ defmodule PayloadValidator.SpexTest do
   # TODO: figure out what this is
   doctest PayloadValidator
 
+  describe "Spex.List" do
+    test "creates a map spec" do
+      assert Spex.List.new(of: Str.new()) == %Spex.List{
+               nullable: false,
+               of: %Str{},
+               min_len: nil,
+               max_len: nil,
+               and: nil
+             }
+
+      assert %Spex.List{
+               nullable: true,
+               of: %Str{},
+               min_len: 1,
+               max_len: 10,
+               and: and_fn
+             } =
+               Spex.List.new(
+                 nullable: true,
+                 of: Str.new(),
+                 min_len: 1,
+                 max_len: 10,
+                 and: &(rem(&1, 2) == 0)
+               )
+
+      assert is_function(and_fn, 1)
+
+      assert_raise SpecError, ":and must be a 1-arity function, got \"foo\"", fn ->
+        Spex.List.new(of: Str.new(), and: "foo")
+      end
+
+      # TODO: maybe return "of is required", which will mean creating specs with required fields
+      assert_raise SpecError, ":of is required and must be a spec", fn ->
+        Spex.List.new()
+      end
+
+      assert_raise SpecError, ":min_len must be a non-negative integer", fn ->
+        Spex.List.new(of: Str.new(), min_len: "foo")
+      end
+
+      assert_raise SpecError, ":max_len must be a non-negative integer", fn ->
+        Spex.List.new(of: Str.new(), max_len: -4)
+      end
+
+      assert_raise SpecError, ":min_len cannot be greater than :max_len", fn ->
+        Spex.List.new(of: Str.new(), max_len: 1, min_len: 2)
+      end
+
+      assert %Spex.List{min_len: 1, max_len: nil} = Spex.List.new(of: Str.new(), min_len: 1)
+
+      assert %Spex.List{min_len: nil, max_len: 1} = Spex.List.new(of: Str.new(), max_len: 1)
+    end
+  end
+
   describe "Spex.Map" do
     test "creates a map spec" do
       assert Spex.Map.new() == %Spex.Map{
