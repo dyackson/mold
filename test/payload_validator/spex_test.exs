@@ -13,7 +13,7 @@ defmodule PayloadValidator.SpexTest do
   doctest PayloadValidator
 
   describe "Spex.List" do
-    test "creates a map spec" do
+    test "creates a list spec" do
       assert Spex.List.new(of: Str.new()) == %Spex.List{
                nullable: false,
                of: %Str{},
@@ -63,6 +63,39 @@ defmodule PayloadValidator.SpexTest do
       assert %Spex.List{min_len: 1, max_len: nil} = Spex.List.new(of: Str.new(), min_len: 1)
 
       assert %Spex.List{min_len: nil, max_len: 1} = Spex.List.new(of: Str.new(), max_len: 1)
+    end
+
+    test "validates using a list spec" do
+      spec = Spex.List.new(of: Str.new())
+
+      assert :ok = Spex.validate([], spec)
+      assert Spex.validate(nil, spec) == {:error, "cannot be nil"}
+
+      min_len_spec = Spex.List.new(of: Str.new(), min_len: 1)
+      assert Spex.validate([], min_len_spec) == {:error, "length must be at least 1"}
+      assert :ok = Spex.validate(["a"], min_len_spec)
+      assert :ok = Spex.validate(["a", "b"], min_len_spec)
+
+      max_len_spec = Spex.List.new(of: Str.new(), max_len: 1)
+      assert :ok = Spex.validate(["a"], max_len_spec)
+      assert :ok = Spex.validate(["a"], max_len_spec)
+      assert Spex.validate(["a", "b"], max_len_spec) == {:error, "length cannot exceed 1"}
+
+      spec = Spex.List.new(of: Str.new())
+      assert :ok = Spex.validate(["a", "b"], spec)
+
+      assert Spex.validate([1, "a", true], spec) ==
+               {:error, %{[0] => "must be a string", [2] => "must be a string"}}
+
+      and_fn = fn ints ->
+        sum = Enum.sum(ints)
+        if sum > 5, do: "sum is too high", else: :ok
+      end
+
+      and_spec = Spex.List.new(of: Int.new(nullable: false), and: and_fn)
+
+      assert :ok = Spex.validate([1, 0, 0, 0, 0, 3], and_spec)
+      assert Spex.validate([1, 6], and_spec) == {:error, "sum is too high"}
     end
   end
 
