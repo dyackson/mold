@@ -155,8 +155,46 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Boolean do
 end
 
 defmodule PayloadValidator.Spex.Integer do
-  @derive [PayloadValidator.ValidateSpec]
-  use PayloadValidator.Spex
+  use PayloadValidator.Spex,
+    fields: [:gt, :lt, :gte, :lte]
+end
+
+defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Integer do
+  def validate_spec(%{lt: lt}) when not is_nil(lt) and not is_integer(lt),
+    do: {:error, ":lt must be an integer"}
+
+  def validate_spec(%{lte: lte}) when not is_nil(lte) and not is_integer(lte),
+    do: {:error, ":lte must be an integer"}
+
+  def validate_spec(%{gt: gt}) when not is_nil(gt) and not is_integer(gt),
+    do: {:error, ":gt must be an integer"}
+
+  def validate_spec(%{gte: gte}) when not is_nil(gte) and not is_integer(gte),
+    do: {:error, ":gte must be an integer"}
+
+  def validate_spec(%{gt: gt, gte: gte}) when not is_nil(gt) and not is_nil(gte),
+    do: {:error, "cannot use both :gt and :gte"}
+
+  def validate_spec(%{lt: lt, lte: lte}) when not is_nil(lt) and not is_nil(lte),
+    do: {:error, "cannot use both :lt and :lte"}
+
+  def validate_spec(%{gte: gte, lte: lte})
+      when not is_nil(gte) and not is_nil(lte) and lte <= gte,
+      do: {:error, ":lte cannot exceed :gte"}
+
+  def validate_spec(%{gte: gte, lt: lt})
+      when not is_nil(gte) and not is_nil(lt) and lt <= gte,
+      do: {:error, ":lt cannot exceed :gte"}
+
+  def validate_spec(%{gt: gt, lt: lt})
+      when not is_nil(gt) and not is_nil(lt) and lt <= gt,
+      do: {:error, ":lt cannot exceed :gt"}
+
+  def validate_spec(%{gt: gt, lt: lte})
+      when not is_nil(gt) and not is_nil(lte) and lte <= gt,
+      do: {:error, ":lte cannot exceed :gt"}
+
+  def validate_spec(%{}), do: :ok
 end
 
 defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Integer do
@@ -314,11 +352,11 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.List do
         |> Enum.filter(&(&1 != :ok))
         |> Map.new()
 
-        if item_errors == %{} do
-          :ok
-        else
-          {:error, item_errors}
-        end
+      if item_errors == %{} do
+        :ok
+      else
+        {:error, item_errors}
+      end
     end
   end
 

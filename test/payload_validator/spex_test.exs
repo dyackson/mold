@@ -9,6 +9,8 @@ defmodule PayloadValidator.SpexTest do
 
   use ExUnit.Case
 
+  @comparision_fields [:gt, :lt, :gte, :lte]
+
   # TODO: figure out what this is
   doctest PayloadValidator
 
@@ -212,9 +214,16 @@ defmodule PayloadValidator.SpexTest do
 
   describe "Spex.Integer" do
     test "creates as integer spec" do
-      IO.inspect(Int)
       assert Int.new(nullable: true) == %Int{nullable: true}
       assert Int.new() == %Int{nullable: false}
+
+      Enum.each(@comparision_fields, fn comp ->
+        assert Int.new([{comp, 5}]) == Map.put(%Int{}, comp, 5)
+
+        assert_raise SpecError, ":#{comp} must be an integer", fn ->
+          Int.new([{comp, "5"}])
+        end
+      end)
     end
 
     test "validate with an integer Spec" do
