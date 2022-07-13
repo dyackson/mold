@@ -294,9 +294,12 @@ defmodule PayloadValidator.SpexTest do
 
   describe "Spex.String" do
     test "creates a string spec" do
+      a_regex = ~r/^\d+$/
       assert Str.new() == %Str{nullable: false}
       assert Str.new(nullable: false) == %Str{nullable: false}
-      assert Str.new(regex: ~r/^\d+$/) == %Str{nullable: false, regex: ~r/^\d+$/}
+      assert Str.new(regex: a_regex) == %Str{nullable: false, regex: a_regex}
+      assert Str.new(one_of: ["foo", "bar"]) == %Str{nullable: false, one_of: ["foo", "bar"]}
+      assert Str.new(one_of_ci: ["foo", "bar"]) == %Str{nullable: false, one_of_ci: ["foo", "bar"]}
 
       assert %Str{nullable: false, and: and_fn} =
                Str.new(nullable: false, and: fn str -> String.contains?(str, "x") end)
@@ -321,6 +324,34 @@ defmodule PayloadValidator.SpexTest do
 
       assert_raise SpecError, ":regex must be a Regex", fn ->
         Str.new(regex: "bar")
+      end
+
+      assert_raise SpecError, ":one_of must be a non-empty list of strings", fn ->
+        Str.new(one_of: "foo")
+      end
+
+      assert_raise SpecError, ":one_of must be a non-empty list of strings", fn ->
+        Str.new(one_of: [])
+      end
+
+      assert_raise SpecError, ":one_of_ci must be a non-empty list of strings", fn ->
+        Str.new(one_of_ci: "foo")
+      end
+
+      assert_raise SpecError, ":one_of_ci must be a non-empty list of strings", fn ->
+        Str.new(one_of_ci: [])
+      end
+
+      assert_raise SpecError, "cannot use both :regex and :one_of_ci", fn ->
+        Str.new(one_of_ci: ["foo"], regex: a_regex)
+      end
+
+      assert_raise SpecError, "cannot use both :regex and :one_of", fn ->
+        Str.new(one_of: ["foo"], regex: a_regex)
+      end
+
+      assert_raise SpecError, "cannot use both :one_of and :one_of_ci", fn ->
+        Str.new(one_of: ["foo"], one_of_ci: ["foo"])
       end
     end
 
