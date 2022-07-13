@@ -195,27 +195,40 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Integer do
     do: {:error, "cannot use both :lt and :lte"}
 
   def validate_spec(%{gte: gte, lte: lte})
-      when not is_nil(gte) and not is_nil(lte) and lte <= gte,
-      do: {:error, ":lte cannot exceed :gte"}
+      when not is_nil(gte) and not is_nil(lte) and not (lte >= gte),
+      do: {:error, ":lte must be greater than or equal to :gte"}
 
   def validate_spec(%{gte: gte, lt: lt})
-      when not is_nil(gte) and not is_nil(lt) and lt <= gte,
-      do: {:error, ":lt cannot exceed :gte"}
+      when not is_nil(gte) and not is_nil(lt) and not (lt > gte),
+      do: {:error, ":lt must be greater than :gte"}
 
   def validate_spec(%{gt: gt, lt: lt})
-      when not is_nil(gt) and not is_nil(lt) and lt <= gt,
-      do: {:error, ":lt cannot exceed :gt"}
+      when not is_nil(gt) and not is_nil(lt) and not (lt > gt),
+      do: {:error, ":lt must be greater than :gt"}
 
-  def validate_spec(%{gt: gt, lt: lte})
-      when not is_nil(gt) and not is_nil(lte) and lte <= gt,
-      do: {:error, ":lte cannot exceed :gt"}
+  def validate_spec(%{gt: gt, lte: lte})
+      when not is_nil(gt) and not is_nil(lte) and not (lte > gt),
+      do: {:error, ":lte must be greater than :gt"}
 
   def validate_spec(%{}), do: :ok
 end
 
 defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Integer do
-  def validate_val(_spec, val) when is_integer(val), do: :ok
-  def validate_val(_spec, _val), do: {:error, "must be an integer"}
+  def validate_val(_spec, val) when not is_integer(val), do: {:error, "must be an integer"}
+
+  def validate_val(%{lt: lt}, val) when not is_nil(lt) and not (val < lt),
+    do: {:error, "must be less than #{lt}"}
+
+  def validate_val(%{lte: lte}, val) when not is_nil(lte) and not (val <= lte),
+    do: {:error, "must be less than or equal to #{lte}"}
+
+  def validate_val(%{gt: gt}, val) when not is_nil(gt) and not (val > gt),
+    do: {:error, "must be greater than #{gt}"}
+
+  def validate_val(%{gte: gte}, val) when not is_nil(gte) and not (val >= gte),
+    do: {:error, "must be greater than or equal to #{gte}"}
+
+  def validate_val(_spec, _val), do: :ok
 end
 
 defmodule PayloadValidator.Spex.Map do
@@ -269,8 +282,8 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Map do
 
   def validate_val(%{required: required, optional: optional, exclusive: exclusive} = _spec, map) do
     disallowed_field_errors =
-      if exclusive do
-        allowed_fields = Map.keys(required) ++ Map.keys(optional)
+    if exclusive do
+      allowed_fields = Map.keys(required) ++ Map.keys(optional)
 
         map
         |> Map.drop(allowed_fields)

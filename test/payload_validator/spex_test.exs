@@ -227,6 +227,48 @@ defmodule PayloadValidator.SpexTest do
           Int.new([{comp, "5"}])
         end
       end)
+
+      assert_raise SpecError, "cannot use both :gt and :gte", fn ->
+        Int.new(gt: 5, gte: 3)
+      end
+
+      assert_raise SpecError, "cannot use both :lt and :lte", fn ->
+        Int.new(lt: 5, lte: 3)
+      end
+
+      # lt/gt
+      assert_raise SpecError, ":lt must be greater than :gt", fn ->
+        Int.new(lt: 0, gt: 3)
+      end
+
+      assert_raise SpecError, ":lt must be greater than :gt", fn ->
+        Int.new(lt: 0, gt: 0)
+      end
+
+      # lte/gt
+      assert_raise SpecError, ":lte must be greater than :gt", fn ->
+        Int.new(lte: 0, gt: 3)
+      end
+
+      assert_raise SpecError, ":lte must be greater than :gt", fn ->
+        Int.new(lte: 0, gt: 0)
+      end
+
+      # lt/gte
+      assert_raise SpecError, ":lt must be greater than :gte", fn ->
+        Int.new(lt: 0, gte: 3)
+      end
+
+      assert_raise SpecError, ":lt must be greater than :gte", fn ->
+        Int.new(lt: 0, gte: 0)
+      end
+
+      # lte/gte
+      assert_raise SpecError, ":lte must be greater than or equal to :gte", fn ->
+        Int.new(lte: 0, gte: 3)
+      end
+
+      assert %Int{lte: 0, gte: 0} = Int.new(lte: 0, gte: 0)
     end
 
     test "validate with an integer Spec" do
@@ -235,6 +277,18 @@ defmodule PayloadValidator.SpexTest do
       assert {:error, "must be an integer"} = Spex.validate("foo", spec)
       assert {:error, "cannot be nil"} = Spex.validate(nil, spec)
       assert :ok = Spex.validate(nil, Int.new(nullable: true))
+
+      bounds_spec = Int.new(gt: 0, lt: 10)
+      assert :ok = Spex.validate(5, bounds_spec)
+      assert {:error, "must be less than 10"} = Spex.validate(10, bounds_spec)
+      assert {:error, "must be greater than 0"} = Spex.validate(0, bounds_spec)
+
+      bounds_spec = Int.new(gte: 0, lte: 10)
+      assert :ok = Spex.validate(5, bounds_spec)
+      assert :ok = Spex.validate(0, bounds_spec)
+      assert :ok = Spex.validate(10, bounds_spec)
+      assert {:error, "must be less than or equal to 10"} = Spex.validate(11, bounds_spec)
+      assert {:error, "must be greater than or equal to 0"} = Spex.validate(-1, bounds_spec)
     end
   end
 
