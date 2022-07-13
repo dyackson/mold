@@ -41,13 +41,16 @@ defmodule PayloadValidator.SpexTest do
 
       assert is_function(and_fn, 1)
 
-      assert_raise SpecError, ":and must be a 1-arity function, got \"foo\"", fn ->
-        Spex.List.new(of: Str.new(), and: "foo")
+      assert_raise SpecError, ":of is required in PayloadValidator.Spex.List", fn ->
+        Spex.List.new()
       end
 
-      # TODO: maybe return "of is required", which will mean creating specs with required fields
-      assert_raise SpecError, ":of is required and must be a spec", fn ->
-        Spex.List.new()
+      assert_raise SpecError, ":of must be a spec", fn ->
+        Spex.List.new(of: "foo")
+      end
+
+      assert_raise SpecError, ":and must be a 1-arity function, got \"foo\"", fn ->
+        Spex.List.new(of: Str.new(), and: "foo")
       end
 
       assert_raise SpecError, ":min_len must be a non-negative integer", fn ->

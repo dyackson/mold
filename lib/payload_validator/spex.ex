@@ -13,7 +13,8 @@ defmodule PayloadValidator.Spex do
 
       def new(opts \\ []) do
         with {:ok, spec} <- PayloadValidator.Spex.create_spec(__MODULE__, opts),
-             {:ok, spec} <- PayloadValidator.Spex.validate_base_fields(spec),
+             :ok <- PayloadValidator.Spex.validate_base_fields(spec),
+             :ok <- PayloadValidator.Spex.check_required_fields(__MODULE__, spec),
              {:ok, spec} <- PayloadValidator.Spex.wrap_validate_spec(__MODULE__, spec) do
           spec
         else
@@ -38,7 +39,22 @@ defmodule PayloadValidator.Spex do
   def validate_base_fields(%{and: and_fn}) when not is_nil(and_fn) and not is_function(and_fn, 1),
     do: {:error, ":and must be a 1-arity function, got #{inspect(and_fn)}"}
 
-  def validate_base_fields(spec), do: {:ok, spec}
+  def validate_base_fields(_spec), do: :ok
+
+  def check_required_fields(module, spec) do
+    missing_field =
+      spec
+      |> Map.from_struct()
+      # To define a spec field as required, give it a default value of
+      # :required. If the user doesn't specifiy a val when creating the spec,
+      # :required will remain.
+      |> Enum.find(fn {_field, val} -> val == :required end)
+
+    case missing_field do
+      nil -> :ok
+      {field, _val} -> {:error, "#{inspect(field)} is required in #{inspect(module)}"}
+    end
+  end
 
   def create_spec(module, opts) do
     try do
@@ -312,7 +328,7 @@ end
 
 defmodule PayloadValidator.Spex.List do
   use PayloadValidator.Spex,
-    fields: [:of, :min_len, :max_len]
+    fields: [:min_len, :max_len, of: :required]
 end
 
 defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.List do
@@ -331,7 +347,7 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.List do
   def validate_spec(%{of: of}) do
     if PayloadValidator.Spex.is_spec?(of),
       do: :ok,
-      else: {:error, ":of is required and must be a spec"}
+      else: {:error, ":of must be a spec"}
   end
 
   def validate_spec(_spec), do: :ok
