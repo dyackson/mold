@@ -299,7 +299,11 @@ defmodule PayloadValidator.SpexTest do
       assert Str.new(nullable: false) == %Str{nullable: false}
       assert Str.new(regex: a_regex) == %Str{nullable: false, regex: a_regex}
       assert Str.new(one_of: ["foo", "bar"]) == %Str{nullable: false, one_of: ["foo", "bar"]}
-      assert Str.new(one_of_ci: ["foo", "bar"]) == %Str{nullable: false, one_of_ci: ["foo", "bar"]}
+
+      assert Str.new(one_of_ci: ["foo", "bar"]) == %Str{
+               nullable: false,
+               one_of_ci: ["foo", "bar"]
+             }
 
       assert %Str{nullable: false, and: and_fn} =
                Str.new(nullable: false, and: fn str -> String.contains?(str, "x") end)
@@ -377,7 +381,19 @@ defmodule PayloadValidator.SpexTest do
       assert :ok = Spex.validate(nil, nullable_and_spec)
       assert {:error, "invalid"} = Spex.validate("bocks", nullable_and_spec)
 
-      # TODO: implement and test min_len, max_len, and enum_vals
+      # TODO: implement and test min_len, max_len,
+      one_of_spec = Str.new(one_of: ["foo", "bar"])
+      assert :ok = Spex.validate("foo", one_of_spec)
+
+      assert {:error, "must be a case-sensative match for one of: foo, bar"} =
+               Spex.validate("farts", one_of_spec)
+
+      one_of_ci_spec = Str.new(one_of_ci: ["foo", "BAR"])
+      assert :ok = Spex.validate("fOo", one_of_ci_spec)
+      assert :ok = Spex.validate("BaR", one_of_ci_spec)
+
+      assert {:error, "must be a case-insensative match for one of: foo, bar"} =
+               Spex.validate("farts", one_of_ci_spec)
     end
 
     test "various allowed return vals for and_fn" do

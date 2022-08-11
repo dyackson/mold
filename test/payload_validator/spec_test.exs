@@ -26,14 +26,13 @@ defmodule PayloadValidator.SpecTest do
   defmodule BadSpec do
     @behaviour SpecBehavior
 
-    defstruct  bad: true
+    defstruct bad: true
 
     @impl SpecBehavior
     def check_spec(%__MODULE__{}), do: "should never be called"
 
     @impl SpecBehavior
     def conform(_, %__MODULE__{}), do: "should never be called"
-
   end
 
   describe "check_spec/1" do

@@ -173,7 +173,7 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.String do
   def validate_spec(%{one_of_ci: one_of_ci} = spec) when is_list(one_of_ci) do
     if Enum.all?(one_of_ci, &is_binary/1) do
       downcased = Enum.map(one_of_ci, &String.downcase/1)
-      {:ok, Enum.put(spec, :one_of_ci, downcased)}
+      {:ok, Map.put(spec, :one_of_ci, downcased)}
     else
       {:error, ":one_of_ci #{@non_empty_list_msg}"}
     end
@@ -204,7 +204,7 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.String do
     if val in one_of do
       :ok
     else
-      {:error, "must be a case-sensative match for one of: #{Emum.join(one_of, ", ")}"}
+      {:error, "must be a case-sensative match for one of: #{Enum.join(one_of, ", ")}"}
     end
   end
 
@@ -212,7 +212,8 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.String do
     if String.downcase(val) in already_downcased do
       :ok
     else
-      {:error, "must be a case-insensative match for one of: #{Emum.join(already_downcased, ", ")}"}
+      {:error,
+       "must be a case-insensative match for one of: #{Enum.join(already_downcased, ", ")}"}
     end
   end
 
