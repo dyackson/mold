@@ -4,6 +4,7 @@ defmodule PayloadValidator.SpexTest do
   alias PayloadValidator.Spex.String, as: Str
   alias PayloadValidator.Spex.Boolean, as: Bool
   alias PayloadValidator.Spex.Integer, as: Int
+  alias PayloadValidator.Spex.Decimal, as: Dec
 
   # import Str
 
@@ -212,6 +213,12 @@ defmodule PayloadValidator.SpexTest do
       assert {:error, "must be a boolean"} = Spex.validate("foo", spec)
       assert {:error, "cannot be nil"} = Spex.validate(nil, spec)
       assert :ok = Spex.validate(nil, Bool.new(nullable: true))
+    end
+  end
+
+  describe "Spex.Decimal" do
+    test "creates a decimal spec" do
+      assert Dec.new() == %Dec{}
     end
   end
 

@@ -240,12 +240,13 @@ defmodule PayloadValidator.Spex.Decimal do
   def is_decimal_string(_), do: false
 end
 
-defimpl PayloadValidatorl.ValidateSpec, for: PayloadValidator.Spex.Decimal do
+defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
   @decimal_regex ~r/^\s*\d*\.?\d+\s*$/
   @error_msg " must be a Decimal, a decimal-formatted string, or an integer"
 
   def validate_spec(%{max_decimal_places: max_decimal_places})
-      when not is_nil(lt) and (not is_integer(lt) or max_decimal_places < 1) do
+      when not is_nil(max_decimal_places) and
+             (not is_integer(max_decimal_places) or max_decimal_places < 1) do
     {:error, ":max_decimal_places must be a positive integer"}
   end
 
@@ -254,31 +255,34 @@ defimpl PayloadValidatorl.ValidateSpec, for: PayloadValidator.Spex.Decimal do
          {:ok, params} <- parse_decimal_or_nil(params, :gt),
          {:ok, params} <- parse_decimal_or_nil(params, :lte),
          {:ok, params} <- parse_decimal_or_nil(params, :gte),
-         {:ok, params} <- at_most_one(params, :lt, :lte),
-         {:ok, params} <- at_most_one(params, :gt, :gte),
-         {:ok, params} <- ensure_logical_bounds(params) do
+         :ok <- at_most_one(params, :lt, :lte),
+         :ok <- at_most_one(params, :gt, :gte),
+         :ok <- ensure_logical_bounds(params) do
       {:ok, params}
     end
   end
 
   defp at_most_one(params, bound1, bound2) do
-    case {params[bound1], params[bound2]} do
-      {b1, b1} when is_nil(b1) or is_nil(b2) -> {:ok, params}
-      _ -> {:error, "cannot use #{b1} and #{b2} together"}
+    params_map = Map.from_struct(params)
+
+    case {params_map[bound1], params_map[bound2]} do
+      {b1, b2} when is_nil(b1) or is_nil(b2) -> :ok
+      _ -> {:error, "cannot use both #{bound1} and #{bound2}"}
     end
   end
 
   defp ensure_logical_bounds(params) do
+    params_map = Map.from_struct(params)
     # at this point, at_most_one/3 has ensured there is at most one lower or upper bound
     lower_bound_tuple =
-      case {params[:gt], params[:gte]} do
+      case {params_map[:gt], params_map[:gte]} do
         {nil, nil} -> nil
         {gt, nil} -> {:gt, gt}
         {nil, gte} -> {:gte, gte}
       end
 
     upper_bound_tuple =
-      case {params[:lt], params[:lte]} do
+      case {params_map[:lt], params_map[:lte]} do
         {nil, nil} -> nil
         {lt, nil} -> {:lt, lt}
         {nil, lte} -> {:lte, lte}
@@ -286,11 +290,11 @@ defimpl PayloadValidatorl.ValidateSpec, for: PayloadValidator.Spex.Decimal do
 
     case {lower_bound_tuple, upper_bound_tuple} do
       {l, u} when is_nil(l) or is_nil(u) ->
-        {:ok, params}
+        :ok
 
       {{lower_k, lower_v}, {upper_k, upper_v}} ->
         if Decimal.lt?(lower_v, upper_v) do
-          {:ok, params}
+          :ok
         else
           {:error, "#{lower_k} must be less than #{upper_k}"}
         end
@@ -298,7 +302,7 @@ defimpl PayloadValidatorl.ValidateSpec, for: PayloadValidator.Spex.Decimal do
   end
 
   defp parse_decimal_or_nil(params, bound) do
-    val = params[bound]
+    val = params |> Map.from_struct() |> Map.get(bound)
 
     case val do
       nil ->
@@ -314,11 +318,11 @@ defimpl PayloadValidatorl.ValidateSpec, for: PayloadValidator.Spex.Decimal do
         if Regex.match?(@decimal_regex, str) do
           {:ok, Map.put(params, bound, Decimal.new(val))}
         else
-          {:error, bound ++ @error_msg}
+          {:error, "#{bound} #{@error_msg}"}
         end
 
       _ ->
-        {:error, bound ++ @error_msg}
+        {:error, "#{bound} #{@error_msg}"}
     end
   end
 end
@@ -562,7 +566,8 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.List do
     end
   end
 end
-# defmodule PayloadValidator.DecimalSpec do
+
+# defmoule PayloadValidator.DecimalSpec do
 #   use PayloadValidator.Spec,
 #     conform_fn_name: :decimal,
 #     fields: [:gt, :lt, :gte, :lte, :max_decimal_places]
