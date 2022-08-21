@@ -219,6 +219,52 @@ defmodule PayloadValidator.SpexTest do
   describe "Spex.Decimal" do
     test "creates a decimal spec" do
       assert Dec.new() == %Dec{}
+      assert Dec.new(gt: 5, lt: "10.01") == %Dec{gt: Decimal.new("5"), lt: Decimal.new("10.01")}
+
+      assert Dec.new(gte: 5, lte: "10.01") == %Dec{
+               gte: Decimal.new("5"),
+               lte: Decimal.new("10.01")
+             }
+
+      Enum.each(@comparision_fields, fn comp ->
+        assert_raise SpecError,
+                     "#{inspect(comp)} must be a Decimal, a decimal-formatted string, or an integer",
+                     fn ->
+                       Dec.new([{comp, "f00py"}])
+                     end
+      end)
+
+      assert_raise SpecError, "cannot use both :gt and :gte", fn ->
+        Dec.new(gt: 5, gte: 3)
+      end
+
+      assert_raise SpecError, "cannot use both :lt and :lte", fn ->
+        Dec.new(lt: 5, lte: 3)
+      end
+
+      for lower <- [:gt, :gte], upper <- [:lt, :lte] do
+        assert_raise SpecError, "#{inspect(lower)} must be less than #{inspect(upper)}", fn ->
+          Dec.new([{lower, 5}, {upper, 4}])
+        end
+
+        assert_raise SpecError, "#{inspect(lower)} must be less than #{inspect(upper)}", fn ->
+          Dec.new([{lower, 5}, {upper, 5}])
+        end
+      end
+
+      assert_raise SpecError, ":max_decimal_places must be a positive integer", fn ->
+        Dec.new(max_decimal_places: "3")
+      end
+
+      assert_raise SpecError, ":max_decimal_places must be a positive integer", fn ->
+        Dec.new(max_decimal_places: -3)
+      end
+    end
+
+    test "validates a decimal" do
+      spec = assert Dec.new()
+
+      assert :ok = Spex.validate("4", spec)
     end
   end
 

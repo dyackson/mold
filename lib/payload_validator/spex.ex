@@ -238,11 +238,12 @@ defmodule PayloadValidator.Spex.Decimal do
   end
 
   def is_decimal_string(_), do: false
+
+  def decimal_regex, do: @decimal_regex
 end
 
 defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
-  @decimal_regex ~r/^\s*\d*\.?\d+\s*$/
-  @error_msg " must be a Decimal, a decimal-formatted string, or an integer"
+  @error_msg "must be a Decimal, a decimal-formatted string, or an integer"
 
   def validate_spec(%{max_decimal_places: max_decimal_places})
       when not is_nil(max_decimal_places) and
@@ -267,7 +268,7 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
 
     case {params_map[bound1], params_map[bound2]} do
       {b1, b2} when is_nil(b1) or is_nil(b2) -> :ok
-      _ -> {:error, "cannot use both #{bound1} and #{bound2}"}
+      _ -> {:error, "cannot use both #{inspect(bound1)} and #{inspect(bound2)}"}
     end
   end
 
@@ -296,7 +297,7 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
         if Decimal.lt?(lower_v, upper_v) do
           :ok
         else
-          {:error, "#{lower_k} must be less than #{upper_k}"}
+          {:error, "#{inspect(lower_k)} must be less than #{inspect(upper_k)}"}
         end
     end
   end
@@ -315,14 +316,59 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
         {:ok, Map.put(params, bound, Decimal.new(val))}
 
       str when is_binary(str) ->
-        if Regex.match?(@decimal_regex, str) do
+        if Regex.match?(PayloadValidator.Spex.Decimal.decimal_regex(), str) do
           {:ok, Map.put(params, bound, Decimal.new(val))}
         else
-          {:error, "#{bound} #{@error_msg}"}
+          {:error, "#{inspect(bound)} #{@error_msg}"}
         end
 
       _ ->
-        {:error, "#{bound} #{@error_msg}"}
+        {:error, "#{inspect(bound)} #{@error_msg}"}
+    end
+  end
+end
+
+defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Decimal do
+  def validate_val(spec, val) do
+    cond do
+      not PayloadValidator.Spex.Decimal.is_decimal_string(val) -> get_error_msg(spec)
+      true -> :ok
+    end
+  end
+
+  defp get_error_msg(spec) do
+    # add the details in the opposite order that they'll be displayed so we can append to the front of the list and reverse at the end.
+    details =
+      case spec.max_decimal_places do
+        nil -> []
+        num -> ["with up to #{num} decimal places"]
+      end
+
+    spec_as_map = Map.from_struct(spec)
+
+    Enum.reduce(
+      [
+        lt: "less than",
+        lte: "less than or equal to",
+        gt: "greater than",
+        gte: "greater than or equal to"
+      ],
+      details,
+      fn {bound, desc}, details ->
+        case spec_as_map[bound] do
+          nil -> details
+          decimal -> ["#{desc} #{Decimal.to_string(decimal, :normal)}" | details]
+        end
+      end
+    )
+
+    msg_start = "must be a decimal-formatted string"
+
+    case Enum.reverse(details) do
+      [] -> msg_start
+      [d1] -> msg_start <> " " <> d1
+      [d1, d2] -> msg_start <> " " <> d1 <> " and " <> d2
+      [d1, d2, d3] -> msg_start <> " " <> d1 <> ", " <> d2 <> ", and " <> d3
     end
   end
 end
