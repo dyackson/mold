@@ -231,7 +231,7 @@ defmodule PayloadValidator.Spex.Decimal do
   @decimal_regex ~r/^\s*\d*\.?\d+\s*$/
 
   use PayloadValidator.Spex,
-    fields: [:gt, :lt, :gte, :lte, :max_decimal_places]
+    fields: [:gt, :lt, :gte, :lte, :max_decimal_places, :error_msg]
 
   def is_decimal_string(it) when is_binary(it) do
     Regex.match?(@decimal_regex, it)
@@ -258,7 +258,8 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
          {:ok, params} <- parse_decimal_or_nil(params, :gte),
          :ok <- at_most_one(params, :lt, :lte),
          :ok <- at_most_one(params, :gt, :gte),
-         :ok <- ensure_logical_bounds(params) do
+         :ok <- ensure_logical_bounds(params),
+         {:ok, params} <- add_error_message(params) do
       {:ok, params}
     end
   end
@@ -302,6 +303,45 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
     end
   end
 
+  defp add_error_message(params) do
+    # add the details in the opposite order that they'll be displayed so we can append to the front of the list and reverse at the end.
+    details =
+      case params.max_decimal_places do
+        nil -> []
+        num -> ["with up to #{num} decimal places"]
+      end
+
+    params_as_map = Map.from_struct(params)
+
+    Enum.reduce(
+      [
+        lt: "less than",
+        lte: "less than or equal to",
+        gt: "greater than",
+        gte: "greater than or equal to"
+      ],
+      details,
+      fn {bound, desc}, details ->
+        case params_as_map[bound] do
+          nil -> details
+          decimal -> ["#{desc} #{Decimal.to_string(decimal, :normal)}" | details]
+        end
+      end
+    )
+
+    msg_start = "must be a decimal-formatted string"
+
+    error_message =
+      case Enum.reverse(details) do
+        [] -> msg_start
+        [d1] -> msg_start <> " " <> d1
+        [d1, d2] -> msg_start <> " " <> d1 <> " and " <> d2
+        [d1, d2, d3] -> msg_start <> " " <> d1 <> ", " <> d2 <> ", and " <> d3
+      end
+
+    {:ok, Map.put(params, :error_message, error_message)}
+  end
+
   defp parse_decimal_or_nil(params, bound) do
     val = params |> Map.from_struct() |> Map.get(bound)
 
@@ -329,46 +369,33 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
 end
 
 defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Decimal do
-  def validate_val(spec, val) do
-    cond do
-      not PayloadValidator.Spex.Decimal.is_decimal_string(val) -> get_error_msg(spec)
-      true -> :ok
+  def validate_val(
+        %{
+          lt: lt,
+          gt: gt,
+          lte: lte,
+          gte: gte,
+          max_decimal_places: max_decimal_places,
+          error_message: error_message
+        },
+        val
+      ) do
+    with true <- PayloadValidator.Spex.Decimal.is_decimal_string(val),
+         true <- lt == nil or Decimal.lt?(val, lt),
+         true <- lte != nil and not Decimal.gt?(val, lte),
+         true <- gt != nil and Decimal.gt?(val, gt),
+         true <- gte != nil and not Decimal.lt?(val, gte),
+         true <- valid_decimal_places(val, max_decimal_places) do
+      :ok
+    else
+      _ -> {:error, error_message}
     end
   end
 
-  defp get_error_msg(spec) do
-    # add the details in the opposite order that they'll be displayed so we can append to the front of the list and reverse at the end.
-    details =
-      case spec.max_decimal_places do
-        nil -> []
-        num -> ["with up to #{num} decimal places"]
-      end
-
-    spec_as_map = Map.from_struct(spec)
-
-    Enum.reduce(
-      [
-        lt: "less than",
-        lte: "less than or equal to",
-        gt: "greater than",
-        gte: "greater than or equal to"
-      ],
-      details,
-      fn {bound, desc}, details ->
-        case spec_as_map[bound] do
-          nil -> details
-          decimal -> ["#{desc} #{Decimal.to_string(decimal, :normal)}" | details]
-        end
-      end
-    )
-
-    msg_start = "must be a decimal-formatted string"
-
-    case Enum.reverse(details) do
-      [] -> msg_start
-      [d1] -> msg_start <> " " <> d1
-      [d1, d2] -> msg_start <> " " <> d1 <> " and " <> d2
-      [d1, d2, d3] -> msg_start <> " " <> d1 <> ", " <> d2 <> ", and " <> d3
+  defp valid_decimal_places(val, max_decimal_places) do
+    case String.split(val) do
+      [_] -> false
+      [_, after_dot] -> length(after_dot) <= max_decimal_places
     end
   end
 end
