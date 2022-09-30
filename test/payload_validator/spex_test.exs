@@ -217,13 +217,23 @@ defmodule PayloadValidator.SpexTest do
   end
 
   describe "Spex.Decimal" do
+    @tag :it
     test "creates a decimal spec" do
-      assert Dec.new() == %Dec{}
-      assert Dec.new(gt: 5, lt: "10.01") == %Dec{gt: Decimal.new("5"), lt: Decimal.new("10.01")}
+      default_error_message = "must be a decimal-formatted string"
+      assert Dec.new() == %Dec{error_message: default_error_message}
+
+      assert Dec.new(gt: 5, lt: "10.01") == %Dec{
+               gt: Decimal.new("5"),
+               lt: Decimal.new("10.01"),
+               error_message: default_error_message <> " greater than 5 and less than 10.01"
+             }
 
       assert Dec.new(gte: 5, lte: "10.01") == %Dec{
                gte: Decimal.new("5"),
-               lte: Decimal.new("10.01")
+               lte: Decimal.new("10.01"),
+               error_message:
+                 default_error_message <>
+                   " greater than or equal to 5 and less than or equal to 10.01"
              }
 
       Enum.each(@comparision_fields, fn comp ->
@@ -261,10 +271,32 @@ defmodule PayloadValidator.SpexTest do
       end
     end
 
-    test "validates a decimal" do
+    # @tag :it
+    test "validates a decimal, basic test" do
       spec = assert Dec.new()
 
+      IO.inspect(spec)
+
       assert :ok = Spex.validate("4", spec)
+      assert :ok = Spex.validate(" 4 ", spec)
+      assert :ok = Spex.validate("-14", spec)
+      assert :ok = Spex.validate(" -14 ", spec)
+      assert :ok = Spex.validate("4.00", spec)
+      assert :ok = Spex.validate("-4.00", spec)
+      assert :ok = Spex.validate("-47.00", spec)
+      assert :ok = Spex.validate(".47", spec)
+      assert :ok = Spex.validate(" .47 ", spec)
+      assert :ok = Spex.validate("-.47", spec)
+      assert :ok = Spex.validate(" -.47 ", spec)
+      assert {:error, _} = Spex.validate("foo", spec)
+      assert {:error, _} = Spex.validate("1.1.", spec)
+      assert {:error, _} = Spex.validate(".1.1", spec)
+      assert {:error, _} = Spex.validate(" ", spec)
+      assert {:error, _} = Spex.validate(".", spec)
+      assert {:error, _} = Spex.validate("..", spec)
+      assert {:error, _} = Spex.validate(1, spec)
+      assert {:error, _} = Spex.validate(Decimal.new(4), spec)
+      assert {:error, _} = Spex.validate(nil, spec)
     end
   end
 

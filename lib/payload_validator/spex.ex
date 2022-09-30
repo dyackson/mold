@@ -228,10 +228,17 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Boolean do
 end
 
 defmodule PayloadValidator.Spex.Decimal do
-  @decimal_regex ~r/^\s*\d*\.?\d+\s*$/
+  @decimal_regex ~r/^\s*-?\d*\.?\d+\s*$/
 
   use PayloadValidator.Spex,
-    fields: [:gt, :lt, :gte, :lte, :max_decimal_places, :error_msg]
+    fields: [
+      :gt,
+      :lt,
+      :gte,
+      :lte,
+      :max_decimal_places,
+      error_message: "must be a decimal-formatted string"
+    ]
 
   def is_decimal_string(it) when is_binary(it) do
     Regex.match?(@decimal_regex, it)
@@ -260,6 +267,7 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
          :ok <- at_most_one(params, :gt, :gte),
          :ok <- ensure_logical_bounds(params),
          {:ok, params} <- add_error_message(params) do
+      IO.inspect(params, label: :here)
       {:ok, params}
     end
   end
@@ -275,7 +283,7 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
 
   defp ensure_logical_bounds(params) do
     params_map = Map.from_struct(params)
-    # at this point, at_most_one/3 has ensured there is at most one lower or upper bound
+    # at this point, at_most_one/3 hessage ensured there is at most one lower orupper:  bound
     lower_bound_tuple =
       case {params_map[:gt], params_map[:gte]} do
         {nil, nil} -> nil
@@ -313,23 +321,24 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
 
     params_as_map = Map.from_struct(params)
 
-    Enum.reduce(
-      [
-        lt: "less than",
-        lte: "less than or equal to",
-        gt: "greater than",
-        gte: "greater than or equal to"
-      ],
-      details,
-      fn {bound, desc}, details ->
-        case params_as_map[bound] do
-          nil -> details
-          decimal -> ["#{desc} #{Decimal.to_string(decimal, :normal)}" | details]
+    details =
+      Enum.reduce(
+        [
+          gt: "greater than",
+          gte: "greater than or equal to",
+          lt: "less than",
+          lte: "less than or equal to"
+        ],
+        details,
+        fn {bound, desc}, details ->
+          case params_as_map[bound] do
+            nil -> details
+            decimal -> ["#{desc} #{Decimal.to_string(decimal, :normal)}" | details]
+          end
         end
-      end
-    )
+      )
 
-    msg_start = "must be a decimal-formatted string"
+    msg_start = params.error_message
 
     error_message =
       case Enum.reverse(details) do
@@ -380,12 +389,13 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Decimal do
         },
         val
       ) do
-    with true <- PayloadValidator.Spex.Decimal.is_decimal_string(val),
-         true <- lt == nil or Decimal.lt?(val, lt),
-         true <- lte != nil and not Decimal.gt?(val, lte),
-         true <- gt != nil and Decimal.gt?(val, gt),
-         true <- gte != nil and not Decimal.lt?(val, gte),
-         true <- valid_decimal_places(val, max_decimal_places) do
+    with true <-
+           IO.inspect(PayloadValidator.Spex.Decimal.is_decimal_string(val), label: :is_decimal_str),
+         true <- IO.inspect(lt == nil or Decimal.lt?(val, lt), label: :lt),
+         true <- IO.inspect(lte == nil or not Decimal.gt?(val, lte), label: :lte),
+         true <- IO.inspect(gt == nil or Decimal.gt?(val, gt), label: :gt),
+         true <- IO.inspect(gte == nil or not Decimal.lt?(val, gte), label: :gte),
+         true <- IO.inspect(valid_decimal_places(val, max_decimal_places), label: :valid_places) do
       :ok
     else
       _ -> {:error, error_message}
@@ -394,7 +404,7 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Decimal do
 
   defp valid_decimal_places(val, max_decimal_places) do
     case String.split(val) do
-      [_] -> false
+      [_] -> true
       [_, after_dot] -> length(after_dot) <= max_decimal_places
     end
   end
