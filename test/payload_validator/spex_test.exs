@@ -184,6 +184,8 @@ defmodule PayloadValidator.SpexTest do
       assert Spex.validate(%{nested: %{my_str: "foo"}}, spec) ==
                {:error, %{[:nested, :my_int] => "is required"}}
 
+      # exclucivity applies to nested specs
+      # TODO: allow explicit overwrite in child spec 
       exclusive_spec = Map.put(spec, :exclusive, true)
 
       map = %{nested: %{my_str: 1, my_bool: 1}, some_other_field: "foo"}
@@ -217,7 +219,7 @@ defmodule PayloadValidator.SpexTest do
   end
 
   describe "Spex.Decimal" do
-    @tag :it
+    # @tag :it
     test "creates a decimal spec" do
       default_error_message = "must be a decimal-formatted string"
       assert Dec.new() == %Dec{error_message: default_error_message}
@@ -234,6 +236,16 @@ defmodule PayloadValidator.SpexTest do
                error_message:
                  default_error_message <>
                    " greater than or equal to 5 and less than or equal to 10.01"
+             }
+
+      # overwrite the default get_error_message function 
+      get_error_message = fn spec -> "gotta be at least #{spec.gte} and at most #{spec.lte}" end
+
+      assert Dec.new(gte: 1, lte: 5, get_error_message: get_error_message) == %Dec{
+               gte: Decimal.new("1"),
+               lte: Decimal.new("5"),
+               error_message: "gotta be at least 1 and at most 5",
+               get_error_message: get_error_message
              }
 
       Enum.each(@comparision_fields, fn comp ->
@@ -271,11 +283,8 @@ defmodule PayloadValidator.SpexTest do
       end
     end
 
-    # @tag :it
     test "validates a decimal, basic test" do
       spec = assert Dec.new()
-
-      IO.inspect(spec)
 
       assert :ok = Spex.validate("4", spec)
       assert :ok = Spex.validate(" 4 ", spec)
@@ -297,6 +306,30 @@ defmodule PayloadValidator.SpexTest do
       assert {:error, _} = Spex.validate(1, spec)
       assert {:error, _} = Spex.validate(Decimal.new(4), spec)
       assert {:error, _} = Spex.validate(nil, spec)
+    end
+
+    test "a decimal spec with exclusive bounds" do
+      spec = assert Dec.new(gt: 1, lt: 3)
+      assert {:error, _} = Spex.validate("1", spec)
+      assert :ok = Spex.validate("2", spec)
+      assert {:error, _} = Spex.validate("3", spec)
+    end
+
+    test "a decimal spec with inclusive bounds" do
+      spec = assert Dec.new(gte: 1, lte: 3)
+      assert {:error, _} = Spex.validate("0.999", spec)
+      assert :ok = Spex.validate("1", spec)
+      assert :ok = Spex.validate("2", spec)
+      assert :ok = Spex.validate("3", spec)
+      assert {:error, _} = Spex.validate("3.001", spec)
+    end
+
+    @tag :it
+    test "a decimal spec with max_decimal_places" do
+      spec = assert Dec.new(max_decimal_places: 2)
+      assert :ok = Spex.validate("1.0", spec)
+      assert :ok = Spex.validate("1.00", spec)
+      assert {:error, _} = Spex.validate("1.000", spec)
     end
   end
 

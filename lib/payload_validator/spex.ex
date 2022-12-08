@@ -237,7 +237,9 @@ defmodule PayloadValidator.Spex.Decimal do
       :gte,
       :lte,
       :max_decimal_places,
-      error_message: "must be a decimal-formatted string"
+      :get_error_message,
+      # TODO: do a check like for :required that tells them they can't supply this
+      error_message: :internal
     ]
 
   def is_decimal_string(it) when is_binary(it) do
@@ -250,7 +252,7 @@ defmodule PayloadValidator.Spex.Decimal do
 end
 
 defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
-  @error_msg "must be a Decimal, a decimal-formatted string, or an integer"
+  @bad_bounds_spec_error_msg "must be a Decimal, a decimal-formatted string, or an integer"
 
   def validate_spec(%{max_decimal_places: max_decimal_places})
       when not is_nil(max_decimal_places) and
@@ -267,7 +269,6 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
          :ok <- at_most_one(params, :gt, :gte),
          :ok <- ensure_logical_bounds(params),
          {:ok, params} <- add_error_message(params) do
-      IO.inspect(params, label: :here)
       {:ok, params}
     end
   end
@@ -311,7 +312,7 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
     end
   end
 
-  defp add_error_message(params) do
+  def get_error_message(%PayloadValidator.Spex.Decimal{} = params) do
     # add the details in the opposite order that they'll be displayed so we can append to the front of the list and reverse at the end.
     details =
       case params.max_decimal_places do
@@ -338,14 +339,22 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
         end
       )
 
-    msg_start = params.error_message
+    msg_start = "must be a decimal-formatted string"
 
+    case Enum.reverse(details) do
+      [] -> msg_start
+      [d1] -> msg_start <> " " <> d1
+      [d1, d2] -> msg_start <> " " <> d1 <> " and " <> d2
+      [d1, d2, d3] -> msg_start <> " " <> d1 <> ", " <> d2 <> ", and " <> d3
+    end
+  end
+
+  def add_error_message(params) do
     error_message =
-      case Enum.reverse(details) do
-        [] -> msg_start
-        [d1] -> msg_start <> " " <> d1
-        [d1, d2] -> msg_start <> " " <> d1 <> " and " <> d2
-        [d1, d2, d3] -> msg_start <> " " <> d1 <> ", " <> d2 <> ", and " <> d3
+      if is_function(params.get_error_message, 1) do
+        params.get_error_message.(params)
+      else
+        get_error_message(params)
       end
 
     {:ok, Map.put(params, :error_message, error_message)}
@@ -368,11 +377,11 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
         if Regex.match?(PayloadValidator.Spex.Decimal.decimal_regex(), str) do
           {:ok, Map.put(params, bound, Decimal.new(val))}
         else
-          {:error, "#{inspect(bound)} #{@error_msg}"}
+          {:error, "#{inspect(bound)} #{@bad_bounds_spec_error_msg}"}
         end
 
       _ ->
-        {:error, "#{inspect(bound)} #{@error_msg}"}
+        {:error, "#{inspect(bound)} #{@bad_bounds_spec_error_msg}"}
     end
   end
 end
@@ -390,12 +399,12 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Decimal do
         val
       ) do
     with true <-
-           IO.inspect(PayloadValidator.Spex.Decimal.is_decimal_string(val), label: :is_decimal_str),
-         true <- IO.inspect(lt == nil or Decimal.lt?(val, lt), label: :lt),
-         true <- IO.inspect(lte == nil or not Decimal.gt?(val, lte), label: :lte),
-         true <- IO.inspect(gt == nil or Decimal.gt?(val, gt), label: :gt),
-         true <- IO.inspect(gte == nil or not Decimal.lt?(val, gte), label: :gte),
-         true <- IO.inspect(valid_decimal_places(val, max_decimal_places), label: :valid_places) do
+           PayloadValidator.Spex.Decimal.is_decimal_string(val),
+         true <- lt == nil or Decimal.lt?(val, lt),
+         true <- lte == nil or not Decimal.gt?(val, lte),
+         true <- gt == nil or Decimal.gt?(val, gt),
+         true <- gte == nil or not Decimal.lt?(val, gte),
+         true <- valid_decimal_places(val, max_decimal_places) do
       :ok
     else
       _ -> {:error, error_message}
@@ -403,54 +412,121 @@ defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Decimal do
   end
 
   defp valid_decimal_places(val, max_decimal_places) do
-    case String.split(val) do
+    case String.split(val, ".") do
       [_] -> true
-      [_, after_dot] -> length(after_dot) <= max_decimal_places
+      [_, after_dot] -> String.length(after_dot) <= max_decimal_places
     end
   end
 end
 
 defmodule PayloadValidator.Spex.Integer do
   use PayloadValidator.Spex,
-    fields: [:gt, :lt, :gte, :lte]
+    fields: [:gt, :lt, :gte, :lte, :error_message, :get_error_message]
 end
 
 defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Integer do
-  def validate_spec(%{lt: lt}) when not is_nil(lt) and not is_integer(lt),
-    do: {:error, ":lt must be an integer"}
+  def validate_spec(params) do
+    with :ok <- check_integer_or_nil(params, :lt),
+         :ok <- check_integer_or_nil(params, :gt),
+         :ok <- check_integer_or_nil(params, :lte),
+         :ok <- check_integer_or_nil(params, :gte),
+         :ok <- at_most_one(params, :lt, :lte),
+         :ok <- at_most_one(params, :gt, :gte),
+         :ok <- ensure_logical_bounds(params),
+         {:ok, params} <- add_error_message(params) do
+      {:ok, params}
+    end
+  end
 
-  def validate_spec(%{lte: lte}) when not is_nil(lte) and not is_integer(lte),
-    do: {:error, ":lte must be an integer"}
+  defp check_integer_or_nil(spec, bound) do
+    spec_as_map = Map.from_struct(spec)
 
-  def validate_spec(%{gt: gt}) when not is_nil(gt) and not is_integer(gt),
-    do: {:error, ":gt must be an integer"}
+    case spec[bound] do
+      nil -> :ok
+      it when is_integer(it) -> :ok
+      _ -> {:error, "#{inspect(bound)} must be an integer"}
+    end
+  end
 
-  def validate_spec(%{gte: gte}) when not is_nil(gte) and not is_integer(gte),
-    do: {:error, ":gte must be an integer"}
+  defp at_most_one(params, bound1, bound2) do
+    params_map = Map.from_struct(params)
 
-  def validate_spec(%{gt: gt, gte: gte}) when not is_nil(gt) and not is_nil(gte),
-    do: {:error, "cannot use both :gt and :gte"}
+    case {params_map[bound1], params_map[bound2]} do
+      {b1, b2} when is_nil(b1) or is_nil(b2) -> :ok
+      _ -> {:error, "cannot use both #{inspect(bound1)} and #{inspect(bound2)}"}
+    end
+  end
 
-  def validate_spec(%{lt: lt, lte: lte}) when not is_nil(lt) and not is_nil(lte),
-    do: {:error, "cannot use both :lt and :lte"}
+  defp ensure_logical_bounds(params) do
+    params_map = Map.from_struct(params)
+    # at this point, at_most_one/3 hessage ensured there is at most one lower orupper:  bound
+    lower_bound_tuple =
+      case {params_map[:gt], params_map[:gte]} do
+        {nil, nil} -> nil
+        {gt, nil} -> {:gt, gt}
+        {nil, gte} -> {:gte, gte}
+      end
 
-  def validate_spec(%{gte: gte, lte: lte})
-      when not is_nil(gte) and not is_nil(lte) and not (lte >= gte),
-      do: {:error, ":lte must be greater than or equal to :gte"}
+    upper_bound_tuple =
+      case {params_map[:lt], params_map[:lte]} do
+        {nil, nil} -> nil
+        {lt, nil} -> {:lt, lt}
+        {nil, lte} -> {:lte, lte}
+      end
 
-  def validate_spec(%{gte: gte, lt: lt})
-      when not is_nil(gte) and not is_nil(lt) and not (lt > gte),
-      do: {:error, ":lt must be greater than :gte"}
+    case {lower_bound_tuple, upper_bound_tuple} do
+      {l, u} when is_nil(l) or is_nil(u) ->
+        :ok
 
-  def validate_spec(%{gt: gt, lt: lt})
-      when not is_nil(gt) and not is_nil(lt) and not (lt > gt),
-      do: {:error, ":lt must be greater than :gt"}
+      {{lower_k, lower_v}, {upper_k, upper_v}} when not lower_v < upper_v ->
+        {:error, "#{inspect(lower_k)} must be less than #{inspect(upper_k)}"}
 
-  def validate_spec(%{gt: gt, lte: lte})
-      when not is_nil(gt) and not is_nil(lte) and not (lte > gt),
-      do: {:error, ":lte must be greater than :gt"}
+      _ ->
+        :ok
+    end
+  end
 
-  def validate_spec(%{}), do: :ok
+  def get_error_message(%PayloadValidator.Spex.Integer{} = params) do
+    params_as_map = Map.from_struct(params)
+
+    details =
+      Enum.reduce(
+        [
+          gt: "greater than",
+          gte: "greater than or equal to",
+          lt: "less than",
+          lte: "less than or equal to"
+        ],
+        [],
+        fn {bound, desc}, details ->
+          case params_as_map[bound] do
+            nil -> details
+            int when is_integer(int) -> ["#{desc} #{bound}" | details]
+          end
+        end
+      )
+
+    # add the details in the opposite order that they'll be displayed so we can append to the front of the list and reverse at the end.
+    msg_start = "must be an integer"
+
+    case Enum.reverse(details) do
+      [] -> msg_start
+      [d1] -> msg_start <> " " <> d1
+      [d1, d2] -> msg_start <> " " <> d1 <> " and " <> d2
+      [d1, d2, d3] -> msg_start <> " " <> d1 <> ", " <> d2 <> ", and " <> d3
+    end
+  end
+
+  def add_error_message(params) do
+    error_message =
+      if is_function(params.get_error_message, 1) do
+        params.get_error_message.(params)
+      else
+        get_error_message(params)
+      end
+
+    {:ok, Map.put(params, :error_message, error_message)}
+  end
 end
 
 defimpl PayloadValidator.ValidateVal, for: PayloadValidator.Spex.Integer do
