@@ -1,21 +1,21 @@
-defmodule PayloadValidator.SpexTest do
-  alias PayloadValidator.SpecError
-  alias PayloadValidator.Spex
-  alias PayloadValidator.Spex.String, as: Str
-  alias PayloadValidator.Spex.Boolean, as: Bool
-  alias PayloadValidator.Spex.Integer, as: Int
-  alias PayloadValidator.Spex.Decimal, as: Dec
+defmodule Dammit.SpecTest do
+  alias Dammit.SpecError
+  alias Dammit.Spec
+  alias Dammit.Spec.String, as: Str
+  alias Dammit.Spec.Boolean, as: Bool
+  alias Dammit.Spec.Integer, as: Int
+  alias Dammit.Spec.Decimal, as: Dec
 
   use ExUnit.Case
 
   @comparision_fields [:gt, :lt, :gte, :lte]
 
   # TODO: figure out what this is
-  doctest PayloadValidator
+  doctest Dammit
 
-  describe "Spex.List" do
+  describe "Spec.List" do
     test "creates a list spec" do
-      assert Spex.List.new(of: Str.new()) == %Spex.List{
+      assert Spec.List.new(of: Str.new()) == %Spec.List{
                nullable: false,
                of: %Str{},
                min_len: nil,
@@ -23,14 +23,14 @@ defmodule PayloadValidator.SpexTest do
                and: nil
              }
 
-      assert %Spex.List{
+      assert %Spec.List{
                nullable: true,
                of: %Str{},
                min_len: 1,
                max_len: 10,
                and: and_fn
              } =
-               Spex.List.new(
+               Spec.List.new(
                  nullable: true,
                  of: Str.new(),
                  min_len: 1,
@@ -40,55 +40,55 @@ defmodule PayloadValidator.SpexTest do
 
       assert is_function(and_fn, 1)
 
-      assert_raise SpecError, ":of is required in PayloadValidator.Spex.List", fn ->
-        Spex.List.new()
+      assert_raise SpecError, ":of is required in Dammit.Spec.List", fn ->
+        Spec.List.new()
       end
 
       assert_raise SpecError, ":of must be a spec", fn ->
-        Spex.List.new(of: "foo")
+        Spec.List.new(of: "foo")
       end
 
       assert_raise SpecError, ":and must be a 1-arity function, got \"foo\"", fn ->
-        Spex.List.new(of: Str.new(), and: "foo")
+        Spec.List.new(of: Str.new(), and: "foo")
       end
 
       assert_raise SpecError, ":min_len must be a non-negative integer", fn ->
-        Spex.List.new(of: Str.new(), min_len: "foo")
+        Spec.List.new(of: Str.new(), min_len: "foo")
       end
 
       assert_raise SpecError, ":max_len must be a non-negative integer", fn ->
-        Spex.List.new(of: Str.new(), max_len: -4)
+        Spec.List.new(of: Str.new(), max_len: -4)
       end
 
       assert_raise SpecError, ":min_len cannot be greater than :max_len", fn ->
-        Spex.List.new(of: Str.new(), max_len: 1, min_len: 2)
+        Spec.List.new(of: Str.new(), max_len: 1, min_len: 2)
       end
 
-      assert %Spex.List{min_len: 1, max_len: nil} = Spex.List.new(of: Str.new(), min_len: 1)
+      assert %Spec.List{min_len: 1, max_len: nil} = Spec.List.new(of: Str.new(), min_len: 1)
 
-      assert %Spex.List{min_len: nil, max_len: 1} = Spex.List.new(of: Str.new(), max_len: 1)
+      assert %Spec.List{min_len: nil, max_len: 1} = Spec.List.new(of: Str.new(), max_len: 1)
     end
 
     test "validates using a list spec" do
-      spec = Spex.List.new(of: Str.new())
+      spec = Spec.List.new(of: Str.new())
 
-      assert :ok = Spex.validate([], spec)
-      assert Spex.validate(nil, spec) == {:error, "cannot be nil"}
+      assert :ok = Spec.validate([], spec)
+      assert Spec.validate(nil, spec) == {:error, "cannot be nil"}
 
-      min_len_spec = Spex.List.new(of: Str.new(), min_len: 1)
-      assert Spex.validate([], min_len_spec) == {:error, "length must be at least 1"}
-      assert :ok = Spex.validate(["a"], min_len_spec)
-      assert :ok = Spex.validate(["a", "b"], min_len_spec)
+      min_len_spec = Spec.List.new(of: Str.new(), min_len: 1)
+      assert Spec.validate([], min_len_spec) == {:error, "length must be at least 1"}
+      assert :ok = Spec.validate(["a"], min_len_spec)
+      assert :ok = Spec.validate(["a", "b"], min_len_spec)
 
-      max_len_spec = Spex.List.new(of: Str.new(), max_len: 1)
-      assert :ok = Spex.validate(["a"], max_len_spec)
-      assert :ok = Spex.validate(["a"], max_len_spec)
-      assert Spex.validate(["a", "b"], max_len_spec) == {:error, "length cannot exceed 1"}
+      max_len_spec = Spec.List.new(of: Str.new(), max_len: 1)
+      assert :ok = Spec.validate(["a"], max_len_spec)
+      assert :ok = Spec.validate(["a"], max_len_spec)
+      assert Spec.validate(["a", "b"], max_len_spec) == {:error, "length cannot exceed 1"}
 
-      spec = Spex.List.new(of: Str.new())
-      assert :ok = Spex.validate(["a", "b"], spec)
+      spec = Spec.List.new(of: Str.new())
+      assert :ok = Spec.validate(["a", "b"], spec)
 
-      assert Spex.validate([1, "a", true], spec) ==
+      assert Spec.validate([1, "a", true], spec) ==
                {:error, %{[0] => "must be a string", [2] => "must be a string"}}
 
       and_fn = fn ints ->
@@ -96,16 +96,16 @@ defmodule PayloadValidator.SpexTest do
         if sum > 5, do: "sum is too high", else: :ok
       end
 
-      and_spec = Spex.List.new(of: Int.new(nullable: false), and: and_fn)
+      and_spec = Spec.List.new(of: Int.new(nullable: false), and: and_fn)
 
-      assert :ok = Spex.validate([1, 0, 0, 0, 0, 3], and_spec)
-      assert Spex.validate([1, 6], and_spec) == {:error, "sum is too high"}
+      assert :ok = Spec.validate([1, 0, 0, 0, 0, 3], and_spec)
+      assert Spec.validate([1, 6], and_spec) == {:error, "sum is too high"}
     end
   end
 
-  describe "Spex.Map" do
+  describe "Spec.Map" do
     test "creates a map spec" do
-      assert Spex.Map.new() == %Spex.Map{
+      assert Spec.Map.new() == %Spec.Map{
                nullable: false,
                required: %{},
                optional: %{},
@@ -113,36 +113,36 @@ defmodule PayloadValidator.SpexTest do
                and: nil
              }
 
-      assert Spex.Map.new(nullable: true) == %Spex.Map{nullable: true}
+      assert Spec.Map.new(nullable: true) == %Spec.Map{nullable: true}
     end
 
     test "validate with a map Spec" do
       spec =
-        Spex.Map.new(
+        Spec.Map.new(
           required: [my_str: Str.new(), my_int: Int.new()],
           optional: %{my_bool: Bool.new(nullable: true)}
         )
 
-      assert :ok = Spex.validate(%{my_str: "foo", my_int: 1}, spec)
-      assert :ok = Spex.validate(%{my_str: "foo", my_int: 1, my_bool: true}, spec)
-      assert :ok = Spex.validate(%{my_str: "foo", my_int: 1, my_bool: nil}, spec)
-      assert :ok = Spex.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, spec)
+      assert :ok = Spec.validate(%{my_str: "foo", my_int: 1}, spec)
+      assert :ok = Spec.validate(%{my_str: "foo", my_int: 1, my_bool: true}, spec)
+      assert :ok = Spec.validate(%{my_str: "foo", my_int: 1, my_bool: nil}, spec)
+      assert :ok = Spec.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, spec)
 
-      assert Spex.validate(%{my_str: "foo"}, spec) == {:error, %{[:my_int] => "is required"}}
+      assert Spec.validate(%{my_str: "foo"}, spec) == {:error, %{[:my_int] => "is required"}}
 
-      assert Spex.validate(%{}, spec) ==
+      assert Spec.validate(%{}, spec) ==
                {:error, %{[:my_int] => "is required", [:my_str] => "is required"}}
 
-      assert Spex.validate(%{my_str: "foo", my_int: "foo"}, spec) ==
+      assert Spec.validate(%{my_str: "foo", my_int: "foo"}, spec) ==
                {:error, %{[:my_int] => "must be an integer"}}
 
-      assert Spex.validate(%{my_str: 1, my_int: "foo"}, spec) ==
+      assert Spec.validate(%{my_str: 1, my_int: "foo"}, spec) ==
                {:error, %{[:my_int] => "must be an integer", [:my_str] => "must be a string"}}
 
-      assert Spex.validate(%{my_str: 1, my_int: "foo"}, spec) ==
+      assert Spec.validate(%{my_str: 1, my_int: "foo"}, spec) ==
                {:error, %{[:my_int] => "must be an integer", [:my_str] => "must be a string"}}
 
-      assert Spex.validate(%{my_str: 1, my_int: "foo", my_bool: "foo"}, spec) ==
+      assert Spec.validate(%{my_str: 1, my_int: "foo", my_bool: "foo"}, spec) ==
                {:error,
                 %{
                   [:my_int] => "must be an integer",
@@ -152,16 +152,16 @@ defmodule PayloadValidator.SpexTest do
 
       exclusive_spec = Map.put(spec, :exclusive, true)
 
-      assert Spex.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, exclusive_spec) ==
+      assert Spec.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, exclusive_spec) ==
                {:error, %{[:some_other_field] => "is not allowed"}}
 
-      empty_map_spec = Spex.Map.new()
+      empty_map_spec = Spec.Map.new()
 
-      assert :ok = Spex.validate(%{}, empty_map_spec)
-      assert :ok = Spex.validate(%{some_other_field: [1, 2, 3]}, empty_map_spec)
-      assert {:error, "cannot be nil"} = Spex.validate(nil, empty_map_spec)
+      assert :ok = Spec.validate(%{}, empty_map_spec)
+      assert :ok = Spec.validate(%{some_other_field: [1, 2, 3]}, empty_map_spec)
+      assert {:error, "cannot be nil"} = Spec.validate(nil, empty_map_spec)
 
-      assert Spex.validate(
+      assert Spec.validate(
                %{some_other_field: [1, 2, 3]},
                Map.put(empty_map_spec, :exclusive, true)
              ) ==
@@ -170,16 +170,16 @@ defmodule PayloadValidator.SpexTest do
 
     test "validate a nested map spec" do
       nested_spec =
-        Spex.Map.new(
+        Spec.Map.new(
           required: %{my_str: Str.new(), my_int: Int.new()},
           optional: [my_bool: Bool.new(nullable: true)]
         )
 
-      spec = Spex.Map.new(required: [nested: nested_spec])
+      spec = Spec.Map.new(required: [nested: nested_spec])
 
-      :ok = Spex.validate(%{nested: %{my_int: 1, my_str: "foo"}}, spec)
+      :ok = Spec.validate(%{nested: %{my_int: 1, my_str: "foo"}}, spec)
 
-      assert Spex.validate(%{nested: %{my_str: "foo"}}, spec) ==
+      assert Spec.validate(%{nested: %{my_str: "foo"}}, spec) ==
                {:error, %{[:nested, :my_int] => "is required"}}
 
       # exclucivity applies to nested specs
@@ -197,11 +197,11 @@ defmodule PayloadValidator.SpexTest do
            [:nested, :my_bool] => "must be a boolean"
          }}
 
-      assert Spex.validate(map, exclusive_spec) == expected
+      assert Spec.validate(map, exclusive_spec) == expected
     end
   end
 
-  describe "Spex.Boolean" do
+  describe "Spec.Boolean" do
     test "creates a boolean spec" do
       assert Bool.new() == %Bool{nullable: false}
       assert Bool.new(nullable: true) == %Bool{nullable: true}
@@ -209,14 +209,14 @@ defmodule PayloadValidator.SpexTest do
 
     test "validate with a boolean Spec" do
       spec = Bool.new()
-      assert :ok = Spex.validate(false, spec)
-      assert {:error, "must be a boolean"} = Spex.validate("foo", spec)
-      assert {:error, "cannot be nil"} = Spex.validate(nil, spec)
-      assert :ok = Spex.validate(nil, Bool.new(nullable: true))
+      assert :ok = Spec.validate(false, spec)
+      assert {:error, "must be a boolean"} = Spec.validate("foo", spec)
+      assert {:error, "cannot be nil"} = Spec.validate(nil, spec)
+      assert :ok = Spec.validate(nil, Bool.new(nullable: true))
     end
   end
 
-  describe "Spex.Decimal" do
+  describe "Spec.Decimal" do
     # @tag :it
     test "creates a decimal spec" do
       default_error_message = "must be a decimal-formatted string"
@@ -284,132 +284,55 @@ defmodule PayloadValidator.SpexTest do
     test "validates a decimal, basic test" do
       spec = assert Dec.new()
 
-      assert :ok = Spex.validate("4", spec)
-      assert :ok = Spex.validate(" 4 ", spec)
-      assert :ok = Spex.validate("-14", spec)
-      assert :ok = Spex.validate(" -14 ", spec)
-      assert :ok = Spex.validate("4.00", spec)
-      assert :ok = Spex.validate("-4.00", spec)
-      assert :ok = Spex.validate("-47.00", spec)
-      assert :ok = Spex.validate(".47", spec)
-      assert :ok = Spex.validate(" .47 ", spec)
-      assert :ok = Spex.validate("-.47", spec)
-      assert :ok = Spex.validate(" -.47 ", spec)
-      assert {:error, _} = Spex.validate("foo", spec)
-      assert {:error, _} = Spex.validate("1.1.", spec)
-      assert {:error, _} = Spex.validate(".1.1", spec)
-      assert {:error, _} = Spex.validate(" ", spec)
-      assert {:error, _} = Spex.validate(".", spec)
-      assert {:error, _} = Spex.validate("..", spec)
-      assert {:error, _} = Spex.validate(1, spec)
-      assert {:error, _} = Spex.validate(Decimal.new(4), spec)
-      assert {:error, _} = Spex.validate(nil, spec)
+      assert :ok = Spec.validate("4", spec)
+      assert :ok = Spec.validate(" 4 ", spec)
+      assert :ok = Spec.validate("-14", spec)
+      assert :ok = Spec.validate(" -14 ", spec)
+      assert :ok = Spec.validate("4.00", spec)
+      assert :ok = Spec.validate("-4.00", spec)
+      assert :ok = Spec.validate("-47.00", spec)
+      assert :ok = Spec.validate(".47", spec)
+      assert :ok = Spec.validate(" .47 ", spec)
+      assert :ok = Spec.validate("-.47", spec)
+      assert :ok = Spec.validate(" -.47 ", spec)
+      assert {:error, _} = Spec.validate("foo", spec)
+      assert {:error, _} = Spec.validate("1.1.", spec)
+      assert {:error, _} = Spec.validate(".1.1", spec)
+      assert {:error, _} = Spec.validate(" ", spec)
+      assert {:error, _} = Spec.validate(".", spec)
+      assert {:error, _} = Spec.validate("..", spec)
+      assert {:error, _} = Spec.validate(1, spec)
+      assert {:error, _} = Spec.validate(Decimal.new(4), spec)
+      assert {:error, _} = Spec.validate(nil, spec)
     end
 
     test "a decimal spec with exclusive bounds" do
       spec = assert Dec.new(gt: 1, lt: 3)
-      assert {:error, _} = Spex.validate("1", spec)
-      assert :ok = Spex.validate("2", spec)
-      assert {:error, _} = Spex.validate("3", spec)
+      assert {:error, _} = Spec.validate("1", spec)
+      assert :ok = Spec.validate("2", spec)
+      assert {:error, _} = Spec.validate("3", spec)
     end
 
     test "a decimal spec with inclusive bounds" do
       spec = assert Dec.new(gte: 1, lte: 3)
-      assert {:error, _} = Spex.validate("0.999", spec)
-      assert :ok = Spex.validate("1", spec)
-      assert :ok = Spex.validate("2", spec)
-      assert :ok = Spex.validate("3", spec)
-      assert {:error, _} = Spex.validate("3.001", spec)
+      assert {:error, _} = Spec.validate("0.999", spec)
+      assert :ok = Spec.validate("1", spec)
+      assert :ok = Spec.validate("2", spec)
+      assert :ok = Spec.validate("3", spec)
+      assert {:error, _} = Spec.validate("3.001", spec)
     end
 
     @tag :it
     test "a decimal spec with max_decimal_places" do
       spec = assert Dec.new(max_decimal_places: 2)
-      assert :ok = Spex.validate("1.0", spec)
-      assert :ok = Spex.validate("1.00", spec)
-      assert {:error, _} = Spex.validate("1.000", spec)
+      assert :ok = Spec.validate("1.0", spec)
+      assert :ok = Spec.validate("1.00", spec)
+      assert {:error, _} = Spec.validate("1.000", spec)
     end
   end
 
-  describe "Spex.Integer" do
-    test "creates as integer spec" do
-      default_error_message = "must be an integer"
-      assert Int.new(nullable: true) == %Int{nullable: true, error_message: default_error_message}
-      assert Int.new() == %Int{nullable: false, error_message: default_error_message}
 
-      Enum.each(@comparision_fields, fn comp ->
-        assert_raise SpecError, ":#{comp} must be an integer", fn ->
-          Int.new([{comp, "5"}])
-        end
-      end)
-
-      assert_raise SpecError, "cannot use both :gt and :gte", fn ->
-        Int.new(gt: 5, gte: 3)
-      end
-
-      assert_raise SpecError, "cannot use both :lt and :lte", fn ->
-        Int.new(lt: 5, lte: 3)
-      end
-
-      # lt/gt
-      assert_raise SpecError, ":gt must be less than :lt", fn ->
-        Int.new(lt: 0, gt: 3)
-      end
-
-      assert_raise SpecError, ":gt must be less than :lt", fn ->
-        Int.new(lt: 0, gt: 0)
-      end
-
-      # lte/gt
-      assert_raise SpecError, ":gt must be less than :lte", fn ->
-        Int.new(lte: 0, gt: 3)
-      end
-
-      assert_raise SpecError, ":gt must be less than :lte", fn ->
-        Int.new(lte: 0, gt: 0)
-      end
-
-      # lt/gte
-      assert_raise SpecError, ":gte must be less than :lt", fn ->
-        Int.new(lt: 0, gte: 3)
-      end
-
-      assert_raise SpecError, ":gte must be less than :lt", fn ->
-        Int.new(lt: 0, gte: 0)
-      end
-
-      # lte/gte
-      assert_raise SpecError, ":gte must be less than :lte", fn ->
-        Int.new(lte: 0, gte: 3)
-      end
-
-      assert_raise SpecError, ":gte must be less than :lte", fn ->
-        Int.new(lte: 0, gte: 0)
-      end
-    end
-
-    test "validate with an integer Spec" do
-      spec = Int.new()
-      assert :ok = Spex.validate(9, spec)
-      assert {:error, "must be an integer"} = Spex.validate("foo", spec)
-      assert {:error, "cannot be nil"} = Spex.validate(nil, spec)
-      assert :ok = Spex.validate(nil, Int.new(nullable: true))
-
-      bounds_spec = Int.new(gt: 0, lt: 10)
-      assert :ok = Spex.validate(5, bounds_spec)
-      assert {:error, "must be less than 10"} = Spex.validate(10, bounds_spec)
-      assert {:error, "must be greater than 0"} = Spex.validate(0, bounds_spec)
-
-      bounds_spec = Int.new(gte: 0, lte: 10)
-      assert :ok = Spex.validate(5, bounds_spec)
-      assert :ok = Spex.validate(0, bounds_spec)
-      assert :ok = Spex.validate(10, bounds_spec)
-      assert {:error, "must be less than or equal to 10"} = Spex.validate(11, bounds_spec)
-      assert {:error, "must be greater than or equal to 0"} = Spex.validate(-1, bounds_spec)
-    end
-  end
-
-  describe "Spex.String" do
+  describe "Spec.String" do
     test "creates a string spec" do
       a_regex = ~r/^\d+$/
       assert Str.new() == %Str{nullable: false}
@@ -439,7 +362,7 @@ defmodule PayloadValidator.SpexTest do
         Str.new(nullable: "foo")
       end
 
-      assert_raise SpecError, ":foo is not a field of PayloadValidator.Spex.String", fn ->
+      assert_raise SpecError, ":foo is not a field of Dammit.Spec.String", fn ->
         Str.new(foo: "bar")
       end
 
@@ -478,39 +401,39 @@ defmodule PayloadValidator.SpexTest do
 
     test "validates values" do
       spec = Str.new()
-      assert :ok = Spex.validate("foo", spec)
-      assert {:error, "cannot be nil"} = Spex.validate(nil, spec)
-      assert {:error, "must be a string"} = Spex.validate(5, spec)
+      assert :ok = Spec.validate("foo", spec)
+      assert {:error, "cannot be nil"} = Spec.validate(nil, spec)
+      assert {:error, "must be a string"} = Spec.validate(5, spec)
 
       nullable_spec = Str.new(nullable: true)
-      assert :ok = Spex.validate("foo", nullable_spec)
-      assert :ok = Spex.validate(nil, nullable_spec)
+      assert :ok = Spec.validate("foo", nullable_spec)
+      assert :ok = Spec.validate(nil, nullable_spec)
 
       re_spec = Str.new(regex: ~r/^\d+$/)
-      assert :ok = Spex.validate("1", re_spec)
-      assert {:error, "cannot be nil"} = Spex.validate(nil, re_spec)
+      assert :ok = Spec.validate("1", re_spec)
+      assert {:error, "cannot be nil"} = Spec.validate(nil, re_spec)
 
       and_spec = Str.new(nullable: false, and: fn str -> String.contains?(str, "x") end)
-      assert :ok = Spex.validate("box", and_spec)
-      assert {:error, "invalid"} = Spex.validate("bocks", and_spec)
+      assert :ok = Spec.validate("box", and_spec)
+      assert {:error, "invalid"} = Spec.validate("bocks", and_spec)
 
       nullable_and_spec = Str.new(nullable: true, and: fn str -> String.contains?(str, "x") end)
-      assert :ok = Spex.validate(nil, nullable_and_spec)
-      assert {:error, "invalid"} = Spex.validate("bocks", nullable_and_spec)
+      assert :ok = Spec.validate(nil, nullable_and_spec)
+      assert {:error, "invalid"} = Spec.validate("bocks", nullable_and_spec)
 
       # TODO: implement and test min_len, max_len,
       one_of_spec = Str.new(one_of: ["foo", "bar"])
-      assert :ok = Spex.validate("foo", one_of_spec)
+      assert :ok = Spec.validate("foo", one_of_spec)
 
       assert {:error, "must be a case-sensative match for one of: foo, bar"} =
-               Spex.validate("farts", one_of_spec)
+               Spec.validate("farts", one_of_spec)
 
       one_of_ci_spec = Str.new(one_of_ci: ["foo", "BAR"])
-      assert :ok = Spex.validate("fOo", one_of_ci_spec)
-      assert :ok = Spex.validate("BaR", one_of_ci_spec)
+      assert :ok = Spec.validate("fOo", one_of_ci_spec)
+      assert :ok = Spec.validate("BaR", one_of_ci_spec)
 
       assert {:error, "must be a case-insensative match for one of: foo, bar"} =
-               Spex.validate("farts", one_of_ci_spec)
+               Spec.validate("farts", one_of_ci_spec)
     end
 
     test "various allowed return vals for and_fn" do
@@ -518,13 +441,13 @@ defmodule PayloadValidator.SpexTest do
         if String.contains?(str, "x"), do: :ok, else: {:error, "need an x"}
       end
 
-      assert :ok = Spex.validate("box", Str.new(and: ret_ok))
-      assert {:error, "need an x"} = Spex.validate("bo", Str.new(and: ret_ok))
+      assert :ok = Spec.validate("box", Str.new(and: ret_ok))
+      assert {:error, "need an x"} = Spec.validate("bo", Str.new(and: ret_ok))
 
       ret_bool = &String.contains?(&1, "x")
-      assert :ok = Spex.validate("box", Str.new(and: ret_bool))
+      assert :ok = Spec.validate("box", Str.new(and: ret_bool))
 
-      assert {:error, "no good"} = Spex.validate("bo", Str.new(and: fn _str -> "no good" end))
+      assert {:error, "no good"} = Spec.validate("bo", Str.new(and: fn _str -> "no good" end))
     end
 
     # test "creates a string spec with enum_vals" do
@@ -559,7 +482,7 @@ defmodule PayloadValidator.SpexTest do
     #   end
 
     #   test "raises if given bad opts" do
-    #     fun_name = "PayloadValidator.StringSpec.string/1"
+    #     fun_name = "Dammit.StringSpec.string/1"
 
     #     assert_raise SpecError, "for #{fun_name}, :required must be a boolean", fn ->
     #       string(required: "foo")

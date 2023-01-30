@@ -1,8 +1,8 @@
-defmodule PayloadValidatorTest do
+defmodule DammitTest do
   use ExUnit.Case
-  doctest PayloadValidator
+  doctest Dammit
 
   test "greets the world" do
-    assert PayloadValidator.hello() == :world
+    assert Dammit.hello() == :world
   end
 end

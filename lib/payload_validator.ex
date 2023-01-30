@@ -1,6 +1,6 @@
-defmodule PayloadValidator do
+defmodule Dammit do
   @moduledoc """
-  Documentation for `PayloadValidator`.
+  Documentation for `Dammit`.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule PayloadValidator do
 
   ## Examples
 
-      iex> PayloadValidator.hello()
+      iex> Dammit.hello()
       :world
 
   """
