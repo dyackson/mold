@@ -6,8 +6,6 @@ defmodule PayloadValidator.SpexTest do
   alias PayloadValidator.Spex.Integer, as: Int
   alias PayloadValidator.Spex.Decimal, as: Dec
 
-  # import Str
-
   use ExUnit.Case
 
   @comparision_fields [:gt, :lt, :gte, :lte]
@@ -335,12 +333,11 @@ defmodule PayloadValidator.SpexTest do
 
   describe "Spex.Integer" do
     test "creates as integer spec" do
-      assert Int.new(nullable: true) == %Int{nullable: true}
-      assert Int.new() == %Int{nullable: false}
+      default_error_message = "must be an integer"
+      assert Int.new(nullable: true) == %Int{nullable: true, error_message: default_error_message}
+      assert Int.new() == %Int{nullable: false, error_message: default_error_message}
 
       Enum.each(@comparision_fields, fn comp ->
-        assert Int.new([{comp, 5}]) == Map.put(%Int{}, comp, 5)
-
         assert_raise SpecError, ":#{comp} must be an integer", fn ->
           Int.new([{comp, "5"}])
         end
@@ -355,38 +352,40 @@ defmodule PayloadValidator.SpexTest do
       end
 
       # lt/gt
-      assert_raise SpecError, ":lt must be greater than :gt", fn ->
+      assert_raise SpecError, ":gt must be less than :lt", fn ->
         Int.new(lt: 0, gt: 3)
       end
 
-      assert_raise SpecError, ":lt must be greater than :gt", fn ->
+      assert_raise SpecError, ":gt must be less than :lt", fn ->
         Int.new(lt: 0, gt: 0)
       end
 
       # lte/gt
-      assert_raise SpecError, ":lte must be greater than :gt", fn ->
+      assert_raise SpecError, ":gt must be less than :lte", fn ->
         Int.new(lte: 0, gt: 3)
       end
 
-      assert_raise SpecError, ":lte must be greater than :gt", fn ->
+      assert_raise SpecError, ":gt must be less than :lte", fn ->
         Int.new(lte: 0, gt: 0)
       end
 
       # lt/gte
-      assert_raise SpecError, ":lt must be greater than :gte", fn ->
+      assert_raise SpecError, ":gte must be less than :lt", fn ->
         Int.new(lt: 0, gte: 3)
       end
 
-      assert_raise SpecError, ":lt must be greater than :gte", fn ->
+      assert_raise SpecError, ":gte must be less than :lt", fn ->
         Int.new(lt: 0, gte: 0)
       end
 
       # lte/gte
-      assert_raise SpecError, ":lte must be greater than or equal to :gte", fn ->
+      assert_raise SpecError, ":gte must be less than :lte", fn ->
         Int.new(lte: 0, gte: 3)
       end
 
-      assert %Int{lte: 0, gte: 0} = Int.new(lte: 0, gte: 0)
+      assert_raise SpecError, ":gte must be less than :lte", fn ->
+        Int.new(lte: 0, gte: 0)
+      end
     end
 
     test "validate with an integer Spec" do

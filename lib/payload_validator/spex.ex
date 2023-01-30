@@ -274,26 +274,27 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
   end
 
   defp at_most_one(params, bound1, bound2) do
-    params_map = Map.from_struct(params)
+    b1 = Map.get(params, bound1)
+    b2 = Map.get(params, bound2)
 
-    case {params_map[bound1], params_map[bound2]} do
-      {b1, b2} when is_nil(b1) or is_nil(b2) -> :ok
-      _ -> {:error, "cannot use both #{inspect(bound1)} and #{inspect(bound2)}"}
+    if is_nil(b1) || is_nil(b2) do
+      :ok
+    else
+      {:error, "cannot use both #{inspect(bound1)} and #{inspect(bound2)}"}
     end
   end
 
   defp ensure_logical_bounds(params) do
-    params_map = Map.from_struct(params)
     # at this point, at_most_one/3 hessage ensured there is at most one lower orupper:  bound
     lower_bound_tuple =
-      case {params_map[:gt], params_map[:gte]} do
+      case {Map.get(params, :gt), Map.get(params, :gte)} do
         {nil, nil} -> nil
         {gt, nil} -> {:gt, gt}
         {nil, gte} -> {:gte, gte}
       end
 
     upper_bound_tuple =
-      case {params_map[:lt], params_map[:lte]} do
+      case {Map.get(params, :lt), Map.get(params, :lte)} do
         {nil, nil} -> nil
         {lt, nil} -> {:lt, lt}
         {nil, lte} -> {:lte, lte}
@@ -320,8 +321,6 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
         num -> ["with up to #{num} decimal places"]
       end
 
-    params_as_map = Map.from_struct(params)
-
     details =
       Enum.reduce(
         [
@@ -332,7 +331,7 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Decimal do
         ],
         details,
         fn {bound, desc}, details ->
-          case params_as_map[bound] do
+          case Map.get(params, bound) do
             nil -> details
             decimal -> ["#{desc} #{Decimal.to_string(decimal, :normal)}" | details]
           end
@@ -439,9 +438,7 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Integer do
   end
 
   defp check_integer_or_nil(spec, bound) do
-    spec_as_map = Map.from_struct(spec)
-
-    case spec[bound] do
+    case Map.get(spec, bound) do
       nil -> :ok
       it when is_integer(it) -> :ok
       _ -> {:error, "#{inspect(bound)} must be an integer"}
@@ -449,26 +446,27 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Integer do
   end
 
   defp at_most_one(params, bound1, bound2) do
-    params_map = Map.from_struct(params)
+    b1 = Map.get(params, bound1)
+    b2 = Map.get(params, bound2)
 
-    case {params_map[bound1], params_map[bound2]} do
-      {b1, b2} when is_nil(b1) or is_nil(b2) -> :ok
-      _ -> {:error, "cannot use both #{inspect(bound1)} and #{inspect(bound2)}"}
+    if is_nil(b1) || is_nil(b2) do
+      :ok
+    else
+      {:error, "cannot use both #{inspect(bound1)} and #{inspect(bound2)}"}
     end
   end
 
   defp ensure_logical_bounds(params) do
-    params_map = Map.from_struct(params)
     # at this point, at_most_one/3 hessage ensured there is at most one lower orupper:  bound
     lower_bound_tuple =
-      case {params_map[:gt], params_map[:gte]} do
+      case {Map.get(params, :gt), Map.get(params, :gte)} do
         {nil, nil} -> nil
         {gt, nil} -> {:gt, gt}
         {nil, gte} -> {:gte, gte}
       end
 
     upper_bound_tuple =
-      case {params_map[:lt], params_map[:lte]} do
+      case {Map.get(params, :lt), Map.get(params, :lte)} do
         {nil, nil} -> nil
         {lt, nil} -> {:lt, lt}
         {nil, lte} -> {:lte, lte}
@@ -478,7 +476,7 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Integer do
       {l, u} when is_nil(l) or is_nil(u) ->
         :ok
 
-      {{lower_k, lower_v}, {upper_k, upper_v}} when not lower_v < upper_v ->
+      {{lower_k, lower_v}, {upper_k, upper_v}} when not (lower_v < upper_v) ->
         {:error, "#{inspect(lower_k)} must be less than #{inspect(upper_k)}"}
 
       _ ->
@@ -487,8 +485,6 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Integer do
   end
 
   def get_error_message(%PayloadValidator.Spex.Integer{} = params) do
-    params_as_map = Map.from_struct(params)
-
     details =
       Enum.reduce(
         [
@@ -499,9 +495,9 @@ defimpl PayloadValidator.ValidateSpec, for: PayloadValidator.Spex.Integer do
         ],
         [],
         fn {bound, desc}, details ->
-          case params_as_map[bound] do
+          case Map.get(params, bound) do
             nil -> details
-            int when is_integer(int) -> ["#{desc} #{bound}" | details]
+            int when is_integer(int) -> ["#{desc} #{int}" | details]
           end
         end
       )
