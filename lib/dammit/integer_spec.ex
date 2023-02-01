@@ -1,9 +1,9 @@
-defmodule Dammit.Spec.Integer do
+defmodule Dammit.IntegerSpec do
   use Dammit.Spec,
     fields: [:gt, :lt, :gte, :lte, :error_message, :get_error_message]
 end
 
-defimpl Dammit.ValidateSpec, for: Dammit.Spec.Integer do
+defimpl Dammit.ValidateSpec, for: Dammit.IntegerSpec do
   def validate_spec(params) do
     with :ok <- check_integer_or_nil(params, :lt),
          :ok <- check_integer_or_nil(params, :gt),
@@ -64,7 +64,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.Spec.Integer do
     end
   end
 
-  def get_error_message(%Dammit.Spec.Integer{} = params) do
+  def get_error_message(%Dammit.IntegerSpec{} = params) do
     details =
       Enum.reduce(
         [
@@ -106,7 +106,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.Spec.Integer do
   end
 end
 
-defimpl Dammit.ValidateVal, for: Dammit.Spec.Integer do
+defimpl Dammit.ValidateVal, for: Dammit.IntegerSpec do
   def validate_val(_spec, val) when not is_integer(val), do: {:error, "must be an integer"}
 
   def validate_val(%{lt: lt}, val) when not is_nil(lt) and not (val < lt),

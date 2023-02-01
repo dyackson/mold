@@ -1,32 +1,32 @@
-defmodule Dammit.ListTest do
+defmodule Dammit.ListSpecTest do
   alias Dammit.SpecError
   alias Dammit.Spec
-  alias Dammit.Spec.List, as: Lst
-  alias Dammit.Spec.String, as: Str
-  alias Dammit.Spec.Integer, as: Int
+  alias Dammit.ListSpec
+  alias Dammit.StringSpec
+  alias Dammit.IntegerSpec
 
   use ExUnit.Case
 
-  describe "Spec.List" do
+  describe "ListSpec.new()" do
     test "creates a list spec" do
-      assert Lst.new(of: Str.new()) == %Lst{
+      assert ListSpec.new(of: StringSpec.new()) == %ListSpec{
                nullable: false,
-               of: %Str{},
+               of: %StringSpec{},
                min_len: nil,
                max_len: nil,
                and: nil
              }
 
-      assert %Lst{
+      assert %ListSpec{
                nullable: true,
-               of: %Str{},
+               of: %StringSpec{},
                min_len: 1,
                max_len: 10,
                and: and_fn
              } =
-               Lst.new(
+               ListSpec.new(
                  nullable: true,
-                 of: Str.new(),
+                 of: StringSpec.new(),
                  min_len: 1,
                  max_len: 10,
                  and: &(rem(&1, 2) == 0)
@@ -35,51 +35,51 @@ defmodule Dammit.ListTest do
       assert is_function(and_fn, 1)
 
       assert_raise SpecError, ":of is required in Dammit.Spec.List", fn ->
-        Lst.new()
+        ListSpec.new()
       end
 
       assert_raise SpecError, ":of must be a spec", fn ->
-        Lst.new(of: "foo")
+        ListSpec.new(of: "foo")
       end
 
       assert_raise SpecError, ":and must be a 1-arity function, got \"foo\"", fn ->
-        Lst.new(of: Str.new(), and: "foo")
+        ListSpec.new(of: StringSpec.new(), and: "foo")
       end
 
       assert_raise SpecError, ":min_len must be a non-negative integer", fn ->
-        Lst.new(of: Str.new(), min_len: "foo")
+        ListSpec.new(of: StringSpec.new(), min_len: "foo")
       end
 
       assert_raise SpecError, ":max_len must be a non-negative integer", fn ->
-        Lst.new(of: Str.new(), max_len: -4)
+        ListSpec.new(of: StringSpec.new(), max_len: -4)
       end
 
       assert_raise SpecError, ":min_len cannot be greater than :max_len", fn ->
-        Lst.new(of: Str.new(), max_len: 1, min_len: 2)
+        ListSpec.new(of: StringSpec.new(), max_len: 1, min_len: 2)
       end
 
-      assert %Lst{min_len: 1, max_len: nil} = Lst.new(of: Str.new(), min_len: 1)
+      assert %ListSpec{min_len: 1, max_len: nil} = ListSpec.new(of: StringSpec.new(), min_len: 1)
 
-      assert %Lst{min_len: nil, max_len: 1} = Lst.new(of: Str.new(), max_len: 1)
+      assert %ListSpec{min_len: nil, max_len: 1} = ListSpec.new(of: StringSpec.new(), max_len: 1)
     end
 
     test "validates using a list spec" do
-      spec = Lst.new(of: Str.new())
+      spec = ListSpec.new(of: StringSpec.new())
 
       assert :ok = Spec.validate([], spec)
       assert Spec.validate(nil, spec) == {:error, "cannot be nil"}
 
-      min_len_spec = Lst.new(of: Str.new(), min_len: 1)
+      min_len_spec = ListSpec.new(of: StringSpec.new(), min_len: 1)
       assert Spec.validate([], min_len_spec) == {:error, "length must be at least 1"}
       assert :ok = Spec.validate(["a"], min_len_spec)
       assert :ok = Spec.validate(["a", "b"], min_len_spec)
 
-      max_len_spec = Lst.new(of: Str.new(), max_len: 1)
+      max_len_spec = ListSpec.new(of: StringSpec.new(), max_len: 1)
       assert :ok = Spec.validate(["a"], max_len_spec)
       assert :ok = Spec.validate(["a"], max_len_spec)
       assert Spec.validate(["a", "b"], max_len_spec) == {:error, "length cannot exceed 1"}
 
-      spec = Lst.new(of: Str.new())
+      spec = ListSpec.new(of: StringSpec.new())
       assert :ok = Spec.validate(["a", "b"], spec)
 
       assert Spec.validate([1, "a", true], spec) ==
@@ -90,7 +90,7 @@ defmodule Dammit.ListTest do
         if sum > 5, do: "sum is too high", else: :ok
       end
 
-      and_spec = Lst.new(of: Int.new(nullable: false), and: and_fn)
+      and_spec = ListSpec.new(of: IntegerSpec.new(nullable: false), and: and_fn)
 
       assert :ok = Spec.validate([1, 0, 0, 0, 0, 3], and_spec)
       assert Spec.validate([1, 6], and_spec) == {:error, "sum is too high"}

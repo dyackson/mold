@@ -1,9 +1,9 @@
-defmodule Dammit.Spec.Map do
+defmodule Dammit.MapSpec do
   use Dammit.Spec,
     fields: [required: %{}, optional: %{}, exclusive: false]
 end
 
-defimpl Dammit.ValidateSpec, for: Dammit.Spec.Map do
+defimpl Dammit.ValidateSpec, for: Dammit.MapSpec do
   @bad_fields_msg "must be a map or keyword list of field names to specs"
 
   def validate_spec(%{exclusive: exclusive}) when not is_boolean(exclusive),

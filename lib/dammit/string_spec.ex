@@ -1,8 +1,8 @@
-defmodule Dammit.Spec.String do
+defmodule Dammit.StringSpec do
   use Dammit.Spec, fields: [:regex, :one_of, :one_of_ci]
 end
 
-defimpl Dammit.ValidateSpec, for: Dammit.Spec.String do
+defimpl Dammit.ValidateSpec, for: Dammit.StringSpec do
   @non_empty_list_msg "must be a non-empty list of strings"
 
   def validate_spec(%{regex: regex, one_of: one_of})
@@ -56,7 +56,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.Spec.String do
   def validate_spec(_), do: :ok
 end
 
-defimpl Dammit.ValidateVal, for: Dammit.Spec.String do
+defimpl Dammit.ValidateVal, for: Dammit.StringSpec do
   def validate_val(_spec, val) when not is_binary(val), do: {:error, "must be a string"}
 
   def validate_val(%{regex: regex}, val) when not is_nil(regex) do

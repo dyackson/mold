@@ -1,4 +1,4 @@
-defmodule Dammit.Spec.Decimal do
+defmodule Dammit.DecimalSpec do
   @decimal_regex ~r/^\s*-?\d*\.?\d+\s*$/
 
   use Dammit.Spec,
@@ -22,7 +22,7 @@ defmodule Dammit.Spec.Decimal do
   def decimal_regex, do: @decimal_regex
 end
 
-defimpl Dammit.ValidateSpec, for: Dammit.Spec.Decimal do
+defimpl Dammit.ValidateSpec, for: Dammit.DecimalSpec do
   @bad_bounds_spec_error_msg "must be a Decimal, a decimal-formatted string, or an integer"
 
   def validate_spec(%{max_decimal_places: max_decimal_places})
@@ -56,7 +56,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.Spec.Decimal do
   end
 
   defp ensure_logical_bounds(params) do
-    # at this point, at_most_one/3 hessage ensured there is at most one lower orupper:  bound
+    # at this point, at_most_one/3 has ensured there is at most one lower or upper bound
     lower_bound_tuple =
       case {Map.get(params, :gt), Map.get(params, :gte)} do
         {nil, nil} -> nil
@@ -84,7 +84,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.Spec.Decimal do
     end
   end
 
-  def get_error_message(%Dammit.Spec.Decimal{} = params) do
+  def get_error_message(%Dammit.DecimalSpec{} = params) do
     # add the details in the opposite order that they'll be displayed so we can append to the front of the list and reverse at the end.
     details =
       case params.max_decimal_places do
@@ -144,7 +144,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.Spec.Decimal do
         {:ok, Map.put(params, bound, Decimal.new(val))}
 
       str when is_binary(str) ->
-        if Regex.match?(Dammit.Spec.Decimal.decimal_regex(), str) do
+        if Regex.match?(Dammit.DecimalSpec.decimal_regex(), str) do
           {:ok, Map.put(params, bound, Decimal.new(val))}
         else
           {:error, "#{inspect(bound)} #{@bad_bounds_spec_error_msg}"}
@@ -156,7 +156,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.Spec.Decimal do
   end
 end
 
-defimpl Dammit.ValidateVal, for: Dammit.Spec.Decimal do
+defimpl Dammit.ValidateVal, for: Dammit.DecimalSpec do
   def validate_val(
         %{
           lt: lt,
@@ -169,7 +169,7 @@ defimpl Dammit.ValidateVal, for: Dammit.Spec.Decimal do
         val
       ) do
     with true <-
-           Dammit.Spec.Decimal.is_decimal_string(val),
+           Dammit.DecimalSpec.is_decimal_string(val),
          true <- lt == nil or Decimal.lt?(val, lt),
          true <- lte == nil or not Decimal.gt?(val, lte),
          true <- gt == nil or Decimal.gt?(val, gt),

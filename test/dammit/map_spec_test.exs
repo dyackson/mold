@@ -1,14 +1,14 @@
-defmodule Dammit.MapTest do
+defmodule Dammit.MapSpecTest do
   alias Dammit.SpecError
   alias Dammit.Spec
-  alias Dammit.Spec.Map, as: MapSpec
-  alias Dammit.Spec.String, as: Str
-  alias Dammit.Spec.Integer, as: Int
-  alias Dammit.Spec.Boolean, as: Bool
+  alias Dammit.MapSpec
+  alias Dammit.StringSpec 
+  alias Dammit.IntegerSpec 
+  alias Dammit.BooleanSpec 
 
   use ExUnit.Case
 
-  describe "Spec.Map" do
+  describe "MapSpec.new/1" do
     test "creates a map spec" do
       assert MapSpec.new() == %MapSpec{
                nullable: false,
@@ -24,8 +24,8 @@ defmodule Dammit.MapTest do
     test "validate with a map Spec" do
       spec =
         MapSpec.new(
-          required: [my_str: Str.new(), my_int: Int.new()],
-          optional: %{my_bool: Bool.new(nullable: true)}
+          required: [my_str: StringSpec.new(), my_int: IntegerSpec.new()],
+          optional: %{my_bool: BooleanSpec.new(nullable: true)}
         )
 
       assert :ok = Spec.validate(%{my_str: "foo", my_int: 1}, spec)
@@ -76,8 +76,8 @@ defmodule Dammit.MapTest do
     test "validate a nested map spec" do
       nested_spec =
         MapSpec.new(
-          required: %{my_str: Str.new(), my_int: Int.new()},
-          optional: [my_bool: Bool.new(nullable: true)]
+          required: %{my_str: StringSpec.new(), my_int: IntegerSpec.new()},
+          optional: [my_bool: BooleanSpec.new(nullable: true)]
         )
 
       spec = MapSpec.new(required: [nested: nested_spec])
