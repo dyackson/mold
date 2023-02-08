@@ -1,4 +1,4 @@
-defmodule Dammit.Spec do
+defmodule Dammit.BaseSpec do
   @base_fields [nullable: false, and: nil]
 
   defmacro __using__(opts \\ []) do
@@ -7,12 +7,13 @@ defmodule Dammit.Spec do
 
     quote do
       defstruct unquote(fields)
+      alias Dammit.BaseSpec
 
       def new(opts \\ []) do
-        with {:ok, spec} <- Dammit.Spec.create_spec(__MODULE__, opts),
-             :ok <- Dammit.Spec.validate_base_fields(spec),
-             :ok <- Dammit.Spec.check_required_fields(__MODULE__, spec),
-             {:ok, spec} <- Dammit.Spec.wrap_validate_spec(__MODULE__, spec) do
+        with {:ok, spec} <- BaseSpec.create_spec(__MODULE__, opts),
+             :ok <- BaseSpec.validate_base_fields(spec),
+             :ok <- BaseSpec.check_required_fields(__MODULE__, spec),
+             {:ok, spec} <- BaseSpec.wrap_validate_spec(__MODULE__, spec) do
           spec
         else
           {:error, reason} -> raise Dammit.SpecError.new(reason)
@@ -106,25 +107,10 @@ defmodule Dammit.Spec do
     end
   end
 
-  def is_spec?(val) do
-    not (val |> Dammit.ValidateSpec.impl_for() |> is_nil()) and
-      not (val |> Dammit.ValidateVal.impl_for() |> is_nil())
-  end
+  def is_spec?(val), do: Dammit.Spec.impl_for(val) != nil
 end
 
-defprotocol Dammit.ValidateSpec do
+defprotocol Dammit.Spec do
   def validate_spec(spec)
-end
-
-defprotocol Dammit.ValidateVal do
   def validate_val(spec, value)
 end
-
-defimpl Dammit.ValidateSpec, for: Any do
-  def validate_spec(_spec), do: :ok
-end
-
-defimpl Dammit.ValidateVal, for: Any do
-  def validate_val(_spec, _val), do: :ok
-end
-

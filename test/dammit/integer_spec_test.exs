@@ -8,8 +8,16 @@ defmodule Dammit.IntegerSpecTest do
   describe "IntegerSpec.new/1" do
     test "creates as integer spec" do
       default_error_message = "must be an integer"
-      assert IntegerSpec.new(nullable: true) == %IntegerSpec{nullable: true, error_message: default_error_message}
-      assert IntegerSpec.new() == %IntegerSpec{nullable: false, error_message: default_error_message}
+
+      assert IntegerSpec.new(nullable: true) == %IntegerSpec{
+               nullable: true,
+               error_message: default_error_message
+             }
+
+      assert IntegerSpec.new() == %IntegerSpec{
+               nullable: false,
+               error_message: default_error_message
+             }
 
       Enum.each([:gt, :lt, :gte, :lte], fn comp ->
         assert_raise SpecError, ":#{comp} must be an integer", fn ->

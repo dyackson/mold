@@ -11,7 +11,11 @@ defmodule Dammit.StringSpecTest do
       assert StringSpec.new() == %StringSpec{nullable: false}
       assert StringSpec.new(nullable: false) == %StringSpec{nullable: false}
       assert StringSpec.new(regex: a_regex) == %StringSpec{nullable: false, regex: a_regex}
-      assert StringSpec.new(one_of: ["foo", "bar"]) == %StringSpec{nullable: false, one_of: ["foo", "bar"]}
+
+      assert StringSpec.new(one_of: ["foo", "bar"]) == %StringSpec{
+               nullable: false,
+               one_of: ["foo", "bar"]
+             }
 
       assert StringSpec.new(one_of_ci: ["foo", "bar"]) == %StringSpec{
                nullable: false,
@@ -90,7 +94,9 @@ defmodule Dammit.StringSpecTest do
       assert :ok = Spec.validate("box", and_spec)
       assert {:error, "invalid"} = Spec.validate("bocks", and_spec)
 
-      nullable_and_spec = StringSpec.new(nullable: true, and: fn str -> String.contains?(str, "x") end)
+      nullable_and_spec =
+        StringSpec.new(nullable: true, and: fn str -> String.contains?(str, "x") end)
+
       assert :ok = Spec.validate(nil, nullable_and_spec)
       assert {:error, "invalid"} = Spec.validate("bocks", nullable_and_spec)
 
@@ -120,7 +126,8 @@ defmodule Dammit.StringSpecTest do
       ret_bool = &String.contains?(&1, "x")
       assert :ok = Spec.validate("box", StringSpec.new(and: ret_bool))
 
-      assert {:error, "no good"} = Spec.validate("bo", StringSpec.new(and: fn _str -> "no good" end))
+      assert {:error, "no good"} =
+               Spec.validate("bo", StringSpec.new(and: fn _str -> "no good" end))
     end
   end
 end

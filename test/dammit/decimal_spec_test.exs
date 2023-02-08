@@ -27,12 +27,13 @@ defmodule Dammit.DecimalSpecTest do
       # overwrite the default get_error_message function 
       get_error_message = fn spec -> "gotta be at least #{spec.gte} and at most #{spec.lte}" end
 
-      assert DecimalSpec.new(gte: 1, lte: 5, get_error_message: get_error_message) == %DecimalSpec{
-               gte: Decimal.new("1"),
-               lte: Decimal.new("5"),
-               error_message: "gotta be at least 1 and at most 5",
-               get_error_message: get_error_message
-             }
+      assert DecimalSpec.new(gte: 1, lte: 5, get_error_message: get_error_message) ==
+               %DecimalSpec{
+                 gte: Decimal.new("1"),
+                 lte: Decimal.new("5"),
+                 error_message: "gotta be at least 1 and at most 5",
+                 get_error_message: get_error_message
+               }
 
       Enum.each([:lt, :lte, :gt, :gte], fn comp ->
         assert_raise SpecError,
