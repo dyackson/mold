@@ -34,7 +34,7 @@ defmodule Dammit.ListSpecTest do
 
       assert is_function(and_fn, 1)
 
-      assert_raise SpecError, ":of is required in Dammit.Spec.List", fn ->
+      assert_raise SpecError, ":of is required in Dammit.ListSpec", fn ->
         ListSpec.new()
       end
 

@@ -44,7 +44,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.MapSpec do
   end
 end
 
-defimpl Dammit.ValidateVal, for: Dammit.Spec.Map do
+defimpl Dammit.ValidateVal, for: Dammit.MapSpec do
   def validate_val(%{} = _spec, val) when not is_map(val), do: {:error, "must be a map"}
 
   def validate_val(%{required: required, optional: optional, exclusive: exclusive} = _spec, map) do

@@ -35,7 +35,7 @@ defmodule Dammit.StringSpecTest do
         StringSpec.new(nullable: "foo")
       end
 
-      assert_raise SpecError, ":foo is not a field of Dammit.Spec.String", fn ->
+      assert_raise SpecError, ":foo is not a field of Dammit.StringSpec", fn ->
         StringSpec.new(foo: "bar")
       end
 
