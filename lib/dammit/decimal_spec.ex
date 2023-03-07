@@ -22,7 +22,7 @@ defmodule Dammit.DecimalSpec do
   def decimal_regex, do: @decimal_regex
 end
 
-defimpl Dammit.ValidateSpec, for: Dammit.DecimalSpec do
+defimpl Dammit.SpecProtocol, for: Dammit.DecimalSpec do
   @bad_bounds_spec_error_msg "must be a Decimal, a decimal-formatted string, or an integer"
 
   def validate_spec(%{max_decimal_places: max_decimal_places})
@@ -41,6 +41,37 @@ defimpl Dammit.ValidateSpec, for: Dammit.DecimalSpec do
          :ok <- ensure_logical_bounds(params),
          {:ok, params} <- add_error_message(params) do
       {:ok, params}
+    end
+  end
+
+  def validate_val(
+        %{
+          lt: lt,
+          gt: gt,
+          lte: lte,
+          gte: gte,
+          max_decimal_places: max_decimal_places,
+          error_message: error_message
+        },
+        val
+      ) do
+    with true <-
+           Dammit.DecimalSpec.is_decimal_string(val),
+         true <- lt == nil or Decimal.lt?(val, lt),
+         true <- lte == nil or not Decimal.gt?(val, lte),
+         true <- gt == nil or Decimal.gt?(val, gt),
+         true <- gte == nil or not Decimal.lt?(val, gte),
+         true <- valid_decimal_places(val, max_decimal_places) do
+      :ok
+    else
+      _ -> {:error, error_message}
+    end
+  end
+
+  defp valid_decimal_places(val, max_decimal_places) do
+    case String.split(val, ".") do
+      [_] -> true
+      [_, after_dot] -> String.length(after_dot) <= max_decimal_places
     end
   end
 
@@ -152,39 +183,6 @@ defimpl Dammit.ValidateSpec, for: Dammit.DecimalSpec do
 
       _ ->
         {:error, "#{inspect(bound)} #{@bad_bounds_spec_error_msg}"}
-    end
-  end
-end
-
-defimpl Dammit.ValidateVal, for: Dammit.DecimalSpec do
-  def validate_val(
-        %{
-          lt: lt,
-          gt: gt,
-          lte: lte,
-          gte: gte,
-          max_decimal_places: max_decimal_places,
-          error_message: error_message
-        },
-        val
-      ) do
-    with true <-
-           Dammit.DecimalSpec.is_decimal_string(val),
-         true <- lt == nil or Decimal.lt?(val, lt),
-         true <- lte == nil or not Decimal.gt?(val, lte),
-         true <- gt == nil or Decimal.gt?(val, gt),
-         true <- gte == nil or not Decimal.lt?(val, gte),
-         true <- valid_decimal_places(val, max_decimal_places) do
-      :ok
-    else
-      _ -> {:error, error_message}
-    end
-  end
-
-  defp valid_decimal_places(val, max_decimal_places) do
-    case String.split(val, ".") do
-      [_] -> true
-      [_, after_dot] -> String.length(after_dot) <= max_decimal_places
     end
   end
 end

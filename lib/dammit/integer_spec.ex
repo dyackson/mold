@@ -3,7 +3,7 @@ defmodule Dammit.IntegerSpec do
     fields: [:gt, :lt, :gte, :lte, :error_message, :get_error_message]
 end
 
-defimpl Dammit.ValidateSpec, for: Dammit.IntegerSpec do
+defimpl Dammit.SpecProtocol, for: Dammit.IntegerSpec do
   def validate_spec(params) do
     with :ok <- check_integer_or_nil(params, :lt),
          :ok <- check_integer_or_nil(params, :gt),
@@ -104,9 +104,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.IntegerSpec do
 
     {:ok, Map.put(params, :error_message, error_message)}
   end
-end
 
-defimpl Dammit.ValidateVal, for: Dammit.IntegerSpec do
   def validate_val(_spec, val) when not is_integer(val), do: {:error, "must be an integer"}
 
   def validate_val(%{lt: lt}, val) when not is_nil(lt) and not (val < lt),

@@ -21,7 +21,7 @@ defmodule Dammit do
               :ok | {:error, String.t()} | {:error, %{optional(path) => String.t()}}
 
   def validate(val, spec) do
-    Dammit.Spec.impl_for!(spec)
+    Dammit.SpecProtocol.impl_for!(spec)
 
     case {val, spec} do
       {nil, %{nullable: true}} ->
@@ -31,7 +31,7 @@ defmodule Dammit do
         {:error, "cannot be nil"}
 
       {_, _} ->
-        with :ok <- Dammit.Spec.validate_val(spec, val) do
+        with :ok <- Dammit.SpecProtocol.validate_val(spec, val) do
           apply_and_fn(spec.and_fn, val)
         end
     end
@@ -40,9 +40,6 @@ defmodule Dammit do
   defp apply_and_fn(fun, val) when is_function(fun) do
     case fun.(val) do
       :ok -> :ok
-      true -> :ok
-      false -> {:error, "invalid"}
-      msg when is_binary(msg) -> {:error, msg}
       {:error, msg} when is_binary(msg) -> {:error, msg}
     end
   end

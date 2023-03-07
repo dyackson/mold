@@ -3,7 +3,7 @@ defmodule Dammit.MapSpec do
     fields: [required: %{}, optional: %{}, exclusive: false]
 end
 
-defimpl Dammit.ValidateSpec, for: Dammit.MapSpec do
+defimpl Dammit.SpecProtocol, for: Dammit.MapSpec do
   @bad_fields_msg "must be a map or keyword list of field names to specs"
 
   def validate_spec(%{exclusive: exclusive}) when not is_boolean(exclusive),
@@ -42,9 +42,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.MapSpec do
       good_name and good_val
     end)
   end
-end
 
-defimpl Dammit.ValidateVal, for: Dammit.MapSpec do
   def validate_val(%{} = _spec, val) when not is_map(val), do: {:error, "must be a map"}
 
   def validate_val(%{required: required, optional: optional, exclusive: exclusive} = _spec, map) do

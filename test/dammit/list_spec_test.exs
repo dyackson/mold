@@ -14,7 +14,7 @@ defmodule Dammit.ListSpecTest do
                of: %StringSpec{},
                min_len: nil,
                max_len: nil,
-               and: nil
+               also: nil
              }
 
       assert %ListSpec{
@@ -22,17 +22,17 @@ defmodule Dammit.ListSpecTest do
                of: %StringSpec{},
                min_len: 1,
                max_len: 10,
-               and: and_fn
+               also: also
              } =
                ListSpec.new(
                  nullable: true,
                  of: StringSpec.new(),
                  min_len: 1,
                  max_len: 10,
-                 and: &(rem(&1, 2) == 0)
+                 also: &(rem(&1, 2) == 0)
                )
 
-      assert is_function(and_fn, 1)
+      assert is_function(also, 1)
 
       assert_raise SpecError, ":of is required in Dammit.ListSpec", fn ->
         ListSpec.new()
@@ -42,8 +42,8 @@ defmodule Dammit.ListSpecTest do
         ListSpec.new(of: "foo")
       end
 
-      assert_raise SpecError, ":and must be a 1-arity function, got \"foo\"", fn ->
-        ListSpec.new(of: StringSpec.new(), and: "foo")
+      assert_raise SpecError, ":also must be a 1-arity function, got \"foo\"", fn ->
+        ListSpec.new(of: StringSpec.new(), also: "foo")
       end
 
       assert_raise SpecError, ":min_len must be a non-negative integer", fn ->
@@ -85,15 +85,15 @@ defmodule Dammit.ListSpecTest do
       assert Spec.validate([1, "a", true], spec) ==
                {:error, %{[0] => "must be a string", [2] => "must be a string"}}
 
-      and_fn = fn ints ->
+      also = fn ints ->
         sum = Enum.sum(ints)
-        if sum > 5, do: "sum is too high", else: :ok
+        if sum > 5, do: {:error, "sum is too high"}, else: :ok
       end
 
-      and_spec = ListSpec.new(of: IntegerSpec.new(nullable: false), and: and_fn)
+      also_spec = ListSpec.new(of: IntegerSpec.new(nullable: false), also: also)
 
-      assert :ok = Spec.validate([1, 0, 0, 0, 0, 3], and_spec)
-      assert Spec.validate([1, 6], and_spec) == {:error, "sum is too high"}
+      assert :ok = Spec.validate([1, 0, 0, 0, 0, 3], also_spec)
+      assert Spec.validate([1, 6], also_spec) == {:error, "sum is too high"}
     end
   end
 end

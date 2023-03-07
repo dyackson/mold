@@ -22,17 +22,17 @@ defmodule Dammit.StringSpecTest do
                one_of_ci: ["foo", "bar"]
              }
 
-      assert %StringSpec{nullable: false, and: and_fn} =
-               StringSpec.new(nullable: false, and: fn str -> String.contains?(str, "x") end)
+      assert %StringSpec{nullable: false, also: also} =
+               StringSpec.new(nullable: false, also: fn str -> String.contains?(str, "x") end)
 
-      assert is_function(and_fn, 1)
+      assert is_function(also, 1)
 
-      assert_raise SpecError, ":and must be a 1-arity function, got \"foo\"", fn ->
-        StringSpec.new(nullable: false, and: "foo")
+      assert_raise SpecError, ":also must be a 1-arity function, got \"foo\"", fn ->
+        StringSpec.new(nullable: false, also: "foo")
       end
 
-      assert_raise SpecError, ~r/and must be a 1-arity function, got/, fn ->
-        StringSpec.new(nullable: false, and: fn _x, _y -> nil end)
+      assert_raise SpecError, ~r/also must be a 1-arity function, got/, fn ->
+        StringSpec.new(nullable: false, also: fn _x, _y -> nil end)
       end
 
       assert_raise SpecError, ":nullable must be a boolean, got \"foo\"", fn ->
@@ -90,15 +90,17 @@ defmodule Dammit.StringSpecTest do
       assert :ok = Spec.validate("1", re_spec)
       assert {:error, "cannot be nil"} = Spec.validate(nil, re_spec)
 
-      and_spec = StringSpec.new(nullable: false, and: fn str -> String.contains?(str, "x") end)
-      assert :ok = Spec.validate("box", and_spec)
-      assert {:error, "invalid"} = Spec.validate("bocks", and_spec)
+      also = &if String.contains?(&1, "x"), do: :ok, else: {:error, "need an x"}
 
-      nullable_and_spec =
-        StringSpec.new(nullable: true, and: fn str -> String.contains?(str, "x") end)
+      also_spec = StringSpec.new(nullable: false, also: also)
 
-      assert :ok = Spec.validate(nil, nullable_and_spec)
-      assert {:error, "invalid"} = Spec.validate("bocks", nullable_and_spec)
+      assert :ok = Spec.validate("box", also_spec)
+      assert {:error, "need an x"} = Spec.validate("bocks", also_spec)
+
+      nullable_also_spec = StringSpec.new(nullable: true, also: also)
+
+      assert :ok = Spec.validate(nil, nullable_also_spec)
+      assert {:error, "need an x"} = Spec.validate("bocks", nullable_also_spec)
 
       # TODO: implement and test min_len, max_len,
       one_of_spec = StringSpec.new(one_of: ["foo", "bar"])
@@ -115,19 +117,13 @@ defmodule Dammit.StringSpecTest do
                Spec.validate("farts", one_of_ci_spec)
     end
 
-    test "various allowed return vals for and_fn" do
-      ret_ok = fn str ->
+    test "with also" do
+      also = fn str ->
         if String.contains?(str, "x"), do: :ok, else: {:error, "need an x"}
       end
 
-      assert :ok = Spec.validate("box", StringSpec.new(and: ret_ok))
-      assert {:error, "need an x"} = Spec.validate("bo", StringSpec.new(and: ret_ok))
-
-      ret_bool = &String.contains?(&1, "x")
-      assert :ok = Spec.validate("box", StringSpec.new(and: ret_bool))
-
-      assert {:error, "no good"} =
-               Spec.validate("bo", StringSpec.new(and: fn _str -> "no good" end))
+      assert :ok = Spec.validate("box", StringSpec.new(also: also))
+      assert {:error, "need an x"} = Spec.validate("bo", StringSpec.new(also: also))
     end
   end
 end

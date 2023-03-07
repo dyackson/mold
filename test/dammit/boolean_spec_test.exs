@@ -1,5 +1,4 @@
 defmodule Dammit.BooleanSpecTest do
-  alias Dammit.SpecError
   alias Dammit.Spec
   alias Dammit.BooleanSpec
 

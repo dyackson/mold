@@ -1,5 +1,4 @@
 defmodule Dammit.MapSpecTest do
-  alias Dammit.SpecError
   alias Dammit.Spec
   alias Dammit.MapSpec
   alias Dammit.StringSpec
@@ -15,7 +14,7 @@ defmodule Dammit.MapSpecTest do
                required: %{},
                optional: %{},
                exclusive: false,
-               and: nil
+               also: nil
              }
 
       assert MapSpec.new(nullable: true) == %MapSpec{nullable: true}

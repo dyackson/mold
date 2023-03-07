@@ -3,7 +3,7 @@ defmodule Dammit.ListSpec do
     fields: [:min_len, :max_len, of: :required]
 end
 
-defimpl Dammit.ValidateSpec, for: Dammit.ListSpec do
+defimpl Dammit.SpecProtocol, for: Dammit.ListSpec do
   def validate_spec(%{min_len: min_len})
       when not is_nil(min_len) and not (is_integer(min_len) and min_len >= 0),
       do: {:error, ":min_len must be a non-negative integer"}
@@ -23,9 +23,7 @@ defimpl Dammit.ValidateSpec, for: Dammit.ListSpec do
   end
 
   def validate_spec(_spec), do: :ok
-end
 
-defimpl Dammit.ValidateVal, for: Dammit.ListSpec do
   def validate_val(%{} = _spec, val) when not is_list(val), do: {:error, "must be a list"}
 
   def validate_val(%{of: item_spec, min_len: min_len, max_len: max_len} = _spec, list) do

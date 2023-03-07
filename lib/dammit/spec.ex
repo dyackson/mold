@@ -1,5 +1,5 @@
-defmodule Dammit.BaseSpec do
-  @base_fields [nullable: false, and: nil]
+defmodule Dammit.Spec do
+  @base_fields [nullable: false, also: nil]
 
   defmacro __using__(opts \\ []) do
     fields = Keyword.get(opts, :fields, [])
@@ -7,13 +7,13 @@ defmodule Dammit.BaseSpec do
 
     quote do
       defstruct unquote(fields)
-      alias Dammit.BaseSpec
+      alias Dammit.Spec
 
       def new(opts \\ []) do
-        with {:ok, spec} <- BaseSpec.create_spec(__MODULE__, opts),
-             :ok <- BaseSpec.validate_base_fields(spec),
-             :ok <- BaseSpec.check_required_fields(__MODULE__, spec),
-             {:ok, spec} <- BaseSpec.wrap_validate_spec(__MODULE__, spec) do
+        with {:ok, spec} <- Spec.create_spec(__MODULE__, opts),
+             :ok <- Spec.validate_base_fields(spec),
+             :ok <- Spec.check_required_fields(__MODULE__, spec),
+             {:ok, spec} <- Spec.wrap_validate_spec(__MODULE__, spec) do
           spec
         else
           {:error, reason} -> raise Dammit.SpecError.new(reason)
@@ -23,7 +23,7 @@ defmodule Dammit.BaseSpec do
   end
 
   def wrap_validate_spec(module, spec) do
-    case Dammit.ValidateSpec.validate_spec(spec) do
+    case Dammit.SpecProtocol.validate_spec(spec) do
       :ok -> {:ok, spec}
       # this gives the implementation a chance to transform the spec
       {:ok, %^module{} = spec} -> {:ok, spec}
@@ -34,8 +34,9 @@ defmodule Dammit.BaseSpec do
   def validate_base_fields(%{nullable: val}) when not is_boolean(val),
     do: {:error, ":nullable must be a boolean, got #{inspect(val)}"}
 
-  def validate_base_fields(%{and: and_fn}) when not is_nil(and_fn) and not is_function(and_fn, 1),
-    do: {:error, ":and must be a 1-arity function, got #{inspect(and_fn)}"}
+  def validate_base_fields(%{also: also_fn})
+      when not is_nil(also_fn) and not is_function(also_fn, 1),
+      do: {:error, ":also must be a 1-arity function, got #{inspect(also_fn)}"}
 
   def validate_base_fields(_spec), do: :ok
 
@@ -67,30 +68,31 @@ defmodule Dammit.BaseSpec do
     Enum.join(split_module_name, ".")
   end
 
-  # TODO: maybe have an intermediate public function that checks that the spec is a spec
-  # However, we want to avoid double checking all the specs in maps
-  def validate(nil, %{nullable: true}), do: :ok
-  def validate(nil, %{nullable: false}), do: {:error, "cannot be nil"}
+  def validate(val, spec) do
+    Dammit.SpecProtocol.impl_for!(spec)
 
-  def validate(val, %{and: and_fn} = spec) do
-    # first conform according to the module, then test the value agaist the :and function only if successful
-    # delete the and so the implementer can't override the and behavior
-    with :ok <- Dammit.ValidateVal.validate_val(spec, val) do
-      apply_and_fn(and_fn, val)
+    case {val, spec} do
+      {nil, %{nullable: true}} ->
+        :ok
+
+      {nil, %{nullable: false}} ->
+        {:error, "cannot be nil"}
+
+      {_, _} ->
+        with :ok <- Dammit.SpecProtocol.validate_val(spec, val) do
+          apply_also(spec.also, val)
+        end
     end
   end
 
-  def apply_and_fn(fun, val) when is_function(fun) do
+  def apply_also(fun, val) when is_function(fun) do
     case fun.(val) do
       :ok -> :ok
-      true -> :ok
-      false -> {:error, "invalid"}
-      msg when is_binary(msg) -> {:error, msg}
       {:error, msg} when is_binary(msg) -> {:error, msg}
     end
   end
 
-  def apply_and_fn(_fun, _val), do: :ok
+  def apply_also(_fun, _val), do: :ok
 
   def recurse(key_in_parent, value, spec) when is_map(spec) do
     case validate(value, spec) do
@@ -107,10 +109,5 @@ defmodule Dammit.BaseSpec do
     end
   end
 
-  def is_spec?(val), do: Dammit.Spec.impl_for(val) != nil
-end
-
-defprotocol Dammit.Spec do
-  def validate_spec(spec)
-  def validate_val(spec, value)
+  def is_spec?(val), do: Dammit.SpecProtocol.impl_for(val) != nil
 end
