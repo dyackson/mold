@@ -39,7 +39,7 @@ defmodule Dammit.StringSpecTest do
         StringSpec.new(nullable: "foo")
       end
 
-      assert_raise SpecError, ":foo is not a field of Dammit.StringSpec", fn ->
+      assert_raise KeyError, ~r/key :foo not found/, fn ->
         StringSpec.new(foo: "bar")
       end
 

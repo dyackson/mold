@@ -1,72 +1,42 @@
 defmodule Dammit.Spec do
-  @base_fields [nullable: false, also: nil]
+  @base_fields [:also, :get_error_message, nullable: false]
 
   defmacro __using__(opts \\ []) do
-    fields = Keyword.get(opts, :fields, [])
-    fields = fields ++ @base_fields
+    user_fields = Keyword.get(opts, :fields, [])
+    fields = user_fields ++ @base_fields
+
+    required_fields =
+      user_fields
+      |> Enum.filter(&match?({_, :required}, &1))
+      |> Enum.map(fn {field, _} -> field end)
 
     quote do
+      @enforce_keys unquote(required_fields)
       defstruct unquote(fields)
       alias Dammit.Spec
 
       def new(opts \\ []) do
-        with {:ok, spec} <- Spec.create_spec(__MODULE__, opts),
-             :ok <- Spec.validate_base_fields(spec),
-             :ok <- Spec.check_required_fields(__MODULE__, spec),
-             {:ok, spec} <- Spec.wrap_validate_spec(__MODULE__, spec) do
-          spec
-        else
+        spec = struct!(__MODULE__, opts)
+        Spec.validate_base_fields!(spec)
+
+        case Dammit.SpecProtocol.validate_spec(spec) do
+          :ok -> spec
+          # this gives the implementation a chance to transform the spec
+          {:ok, %__MODULE__{} = spec} -> spec
           {:error, reason} -> raise Dammit.SpecError.new(reason)
         end
       end
     end
   end
 
-  def wrap_validate_spec(module, spec) do
-    case Dammit.SpecProtocol.validate_spec(spec) do
-      :ok -> {:ok, spec}
-      # this gives the implementation a chance to transform the spec
-      {:ok, %^module{} = spec} -> {:ok, spec}
-      {:error, reason} -> {:error, reason}
-    end
-  end
+  def validate_base_fields!(%{nullable: val}) when not is_boolean(val),
+    do: raise(Dammit.SpecError.new(":nullable must be a boolean, got #{inspect(val)}"))
 
-  def validate_base_fields(%{nullable: val}) when not is_boolean(val),
-    do: {:error, ":nullable must be a boolean, got #{inspect(val)}"}
+  def validate_base_fields!(%{also: also})
+      when not is_nil(also) and not is_function(also, 1),
+      do: raise(Dammit.SpecError.new(":also must be a 1-arity function, got #{inspect(also)}"))
 
-  def validate_base_fields(%{also: also_fn})
-      when not is_nil(also_fn) and not is_function(also_fn, 1),
-      do: {:error, ":also must be a 1-arity function, got #{inspect(also_fn)}"}
-
-  def validate_base_fields(_spec), do: :ok
-
-  def check_required_fields(module, spec) do
-    missing_field =
-      spec
-      |> Map.from_struct()
-      # To define a spec field as required, give it a default value of
-      # :required. If the user doesn't specifiy a val when creating the spec,
-      # :required will remain.
-      |> Enum.find(fn {_field, val} -> val == :required end)
-
-    case missing_field do
-      nil -> :ok
-      {field, _val} -> {:error, "#{inspect(field)} is required in #{inspect(module)}"}
-    end
-  end
-
-  def create_spec(module, opts) do
-    try do
-      {:ok, struct!(module, opts)}
-    rescue
-      e in KeyError -> {:error, "#{inspect(e.key)} is not a field of #{inspect(module)}"}
-    end
-  end
-
-  def get_name(module) do
-    ["Elixir" | split_module_name] = module |> to_string() |> String.split(".")
-    Enum.join(split_module_name, ".")
-  end
+  def validate_base_fields!(_spec), do: :ok
 
   def validate(val, spec) do
     Dammit.SpecProtocol.impl_for!(spec)

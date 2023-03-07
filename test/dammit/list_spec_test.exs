@@ -34,7 +34,7 @@ defmodule Dammit.ListSpecTest do
 
       assert is_function(also, 1)
 
-      assert_raise SpecError, ":of is required in Dammit.ListSpec", fn ->
+      assert_raise ArgumentError, ~r/the following keys must also be given.* \[:of\]/, fn ->
         ListSpec.new()
       end
 
