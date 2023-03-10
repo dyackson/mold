@@ -8,35 +8,35 @@ defmodule Anal.StringSpecTest do
   describe "StringSpec.new/1" do
     test "creates a string spec" do
       a_regex = ~r/^\d+$/
-      assert StringSpec.new() == %StringSpec{nullable: false}
-      assert StringSpec.new(nullable: false) == %StringSpec{nullable: false}
-      assert StringSpec.new(regex: a_regex) == %StringSpec{nullable: false, regex: a_regex}
+      assert StringSpec.new() == %StringSpec{can_be_nil: false}
+      assert StringSpec.new(can_be_nil: false) == %StringSpec{can_be_nil: false}
+      assert StringSpec.new(regex: a_regex) == %StringSpec{can_be_nil: false, regex: a_regex}
 
       assert StringSpec.new(one_of: ["foo", "bar"]) == %StringSpec{
-               nullable: false,
+               can_be_nil: false,
                one_of: ["foo", "bar"]
              }
 
       assert StringSpec.new(one_of_ci: ["foo", "bar"]) == %StringSpec{
-               nullable: false,
+               can_be_nil: false,
                one_of_ci: ["foo", "bar"]
              }
 
-      assert %StringSpec{nullable: false, also: also} =
-               StringSpec.new(nullable: false, also: fn str -> String.contains?(str, "x") end)
+      assert %StringSpec{can_be_nil: false, also: also} =
+               StringSpec.new(can_be_nil: false, also: fn str -> String.contains?(str, "x") end)
 
       assert is_function(also, 1)
 
       assert_raise SpecError, ":also must be a 1-arity function, got \"foo\"", fn ->
-        StringSpec.new(nullable: false, also: "foo")
+        StringSpec.new(can_be_nil: false, also: "foo")
       end
 
       assert_raise SpecError, ~r/also must be a 1-arity function, got/, fn ->
-        StringSpec.new(nullable: false, also: fn _x, _y -> nil end)
+        StringSpec.new(can_be_nil: false, also: fn _x, _y -> nil end)
       end
 
-      assert_raise SpecError, ":nullable must be a boolean, got \"foo\"", fn ->
-        StringSpec.new(nullable: "foo")
+      assert_raise SpecError, ":can_be_nil must be a boolean, got \"foo\"", fn ->
+        StringSpec.new(can_be_nil: "foo")
       end
 
       assert_raise KeyError, ~r/key :foo not found/, fn ->
@@ -82,9 +82,9 @@ defmodule Anal.StringSpecTest do
       assert {:error, "cannot be nil"} = Spec.validate(nil, spec)
       assert {:error, "must be a string"} = Spec.validate(5, spec)
 
-      nullable_spec = StringSpec.new(nullable: true)
-      assert :ok = Spec.validate("foo", nullable_spec)
-      assert :ok = Spec.validate(nil, nullable_spec)
+      can_be_nil_spec = StringSpec.new(can_be_nil: true)
+      assert :ok = Spec.validate("foo", can_be_nil_spec)
+      assert :ok = Spec.validate(nil, can_be_nil_spec)
 
       re_spec = StringSpec.new(regex: ~r/^\d+$/)
       assert :ok = Spec.validate("1", re_spec)
@@ -92,15 +92,15 @@ defmodule Anal.StringSpecTest do
 
       also = &if String.contains?(&1, "x"), do: :ok, else: {:error, "need an x"}
 
-      also_spec = StringSpec.new(nullable: false, also: also)
+      also_spec = StringSpec.new(can_be_nil: false, also: also)
 
       assert :ok = Spec.validate("box", also_spec)
       assert {:error, "need an x"} = Spec.validate("bocks", also_spec)
 
-      nullable_also_spec = StringSpec.new(nullable: true, also: also)
+      can_be_nil_also_spec = StringSpec.new(can_be_nil: true, also: also)
 
-      assert :ok = Spec.validate(nil, nullable_also_spec)
-      assert {:error, "need an x"} = Spec.validate("bocks", nullable_also_spec)
+      assert :ok = Spec.validate(nil, can_be_nil_also_spec)
+      assert {:error, "need an x"} = Spec.validate("bocks", can_be_nil_also_spec)
 
       # TODO: implement and test min_len, max_len,
       one_of_spec = StringSpec.new(one_of: ["foo", "bar"])

@@ -1,5 +1,5 @@
 defmodule Anal.StringSpec do
-  use Anal.Spec, fields: [:regex, :one_of, :one_of_ci]
+  use Anal.Spec, fields: [:regex, :one_of, :one_of_ci, :min_length, :max_length]
 end
 
 defimpl Anal.SpecProtocol, for: Anal.StringSpec do

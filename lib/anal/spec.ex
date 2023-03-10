@@ -1,5 +1,5 @@
 defmodule Anal.Spec do
-  @base_fields [:also, :__error_message__, :get_error_message, nullable: false]
+  @base_fields [:also, :__error_message__, :get_error_message, can_be_nil: false]
 
   defmacro __using__(opts \\ []) do
     user_fields = Keyword.get(opts, :fields, [])
@@ -29,8 +29,8 @@ defmodule Anal.Spec do
     end
   end
 
-  def validate_base_fields!(%{nullable: val}) when not is_boolean(val),
-    do: raise(Anal.SpecError.new(":nullable must be a boolean, got #{inspect(val)}"))
+  def validate_base_fields!(%{can_be_nil: val}) when not is_boolean(val),
+    do: raise(Anal.SpecError.new(":can_be_nil must be a boolean, got #{inspect(val)}"))
 
   def validate_base_fields!(%{also: also})
       when not is_nil(also) and not is_function(also, 1),
@@ -42,10 +42,10 @@ defmodule Anal.Spec do
     Anal.SpecProtocol.impl_for!(spec)
 
     case {val, spec} do
-      {nil, %{nullable: true}} ->
+      {nil, %{can_be_nil: true}} ->
         :ok
 
-      {nil, %{nullable: false}} ->
+      {nil, %{can_be_nil: false}} ->
         {:error, "cannot be nil"}
 
       {_, _} ->

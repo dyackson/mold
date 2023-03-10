@@ -10,7 +10,7 @@ defmodule Anal.ListSpecTest do
   describe "ListSpec.new()" do
     test "creates a list spec" do
       assert ListSpec.new(of: StringSpec.new()) == %ListSpec{
-               nullable: false,
+               can_be_nil: false,
                of: %StringSpec{},
                min_len: nil,
                max_len: nil,
@@ -18,14 +18,14 @@ defmodule Anal.ListSpecTest do
              }
 
       assert %ListSpec{
-               nullable: true,
+               can_be_nil: true,
                of: %StringSpec{},
                min_len: 1,
                max_len: 10,
                also: also
              } =
                ListSpec.new(
-                 nullable: true,
+                 can_be_nil: true,
                  of: StringSpec.new(),
                  min_len: 1,
                  max_len: 10,
@@ -90,7 +90,7 @@ defmodule Anal.ListSpecTest do
         if sum > 5, do: {:error, "sum is too high"}, else: :ok
       end
 
-      also_spec = ListSpec.new(of: IntegerSpec.new(nullable: false), also: also)
+      also_spec = ListSpec.new(of: IntegerSpec.new(can_be_nil: false), also: also)
 
       assert :ok = Spec.validate([1, 0, 0, 0, 0, 3], also_spec)
       assert Spec.validate([1, 6], also_spec) == {:error, "sum is too high"}

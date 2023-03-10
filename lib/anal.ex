@@ -24,10 +24,10 @@ defmodule Anal do
     Anal.SpecProtocol.impl_for!(spec)
 
     case {val, spec} do
-      {nil, %{nullable: true}} ->
+      {nil, %{can_be_nil: true}} ->
         :ok
 
-      {nil, %{nullable: false}} ->
+      {nil, %{can_be_nil: false}} ->
         {:error, "cannot be nil"}
 
       {_, _} ->

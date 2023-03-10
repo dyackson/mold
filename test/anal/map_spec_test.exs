@@ -10,21 +10,21 @@ defmodule Anal.MapSpecTest do
   describe "MapSpec.new/1" do
     test "creates a map spec" do
       assert MapSpec.new() == %MapSpec{
-               nullable: false,
+               can_be_nil: false,
                required: %{},
                optional: %{},
                exclusive: false,
                also: nil
              }
 
-      assert MapSpec.new(nullable: true) == %MapSpec{nullable: true}
+      assert MapSpec.new(can_be_nil: true) == %MapSpec{can_be_nil: true}
     end
 
     test "validate with a map Spec" do
       spec =
         MapSpec.new(
           required: [my_str: StringSpec.new(), my_int: IntegerSpec.new()],
-          optional: %{my_bool: BooleanSpec.new(nullable: true)}
+          optional: %{my_bool: BooleanSpec.new(can_be_nil: true)}
         )
 
       assert :ok = Spec.validate(%{my_str: "foo", my_int: 1}, spec)
@@ -76,7 +76,7 @@ defmodule Anal.MapSpecTest do
       nested_spec =
         MapSpec.new(
           required: %{my_str: StringSpec.new(), my_int: IntegerSpec.new()},
-          optional: [my_bool: BooleanSpec.new(nullable: true)]
+          optional: [my_bool: BooleanSpec.new(can_be_nil: true)]
         )
 
       spec = MapSpec.new(required: [nested: nested_spec])

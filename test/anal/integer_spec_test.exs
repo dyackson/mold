@@ -9,13 +9,13 @@ defmodule Anal.IntegerSpecTest do
     test "creates as integer spec" do
       default_error_message = "must be an integer"
 
-      assert IntegerSpec.new(nullable: true) == %IntegerSpec{
-               nullable: true,
+      assert IntegerSpec.new(can_be_nil: true) == %IntegerSpec{
+               can_be_nil: true,
                error_message: default_error_message
              }
 
       assert IntegerSpec.new() == %IntegerSpec{
-               nullable: false,
+               can_be_nil: false,
                error_message: default_error_message
              }
 
@@ -75,7 +75,7 @@ defmodule Anal.IntegerSpecTest do
       assert :ok = Spec.validate(9, spec)
       assert {:error, "must be an integer"} = Spec.validate("foo", spec)
       assert {:error, "cannot be nil"} = Spec.validate(nil, spec)
-      assert :ok = Spec.validate(nil, IntegerSpec.new(nullable: true))
+      assert :ok = Spec.validate(nil, IntegerSpec.new(can_be_nil: true))
 
       bounds_spec = IntegerSpec.new(gt: 0, lt: 10)
       assert :ok = Spec.validate(5, bounds_spec)
