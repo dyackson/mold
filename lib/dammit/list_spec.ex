@@ -1,9 +1,9 @@
-defmodule Dammit.ListSpec do
-  use Dammit.Spec,
+defmodule Anal.ListSpec do
+  use Anal.Spec,
     fields: [:min_len, :max_len, of: :required]
 end
 
-defimpl Dammit.SpecProtocol, for: Dammit.ListSpec do
+defimpl Anal.SpecProtocol, for: Anal.ListSpec do
   def validate_spec(%{min_len: min_len})
       when not is_nil(min_len) and not (is_integer(min_len) and min_len >= 0),
       do: {:error, ":min_len must be a non-negative integer"}
@@ -17,7 +17,7 @@ defimpl Dammit.SpecProtocol, for: Dammit.ListSpec do
       do: {:error, ":min_len cannot be greater than :max_len"}
 
   def validate_spec(%{of: of}) do
-    if Dammit.Spec.is_spec?(of),
+    if Anal.Spec.is_spec?(of),
       do: :ok,
       else: {:error, ":of must be a spec"}
   end
@@ -33,7 +33,7 @@ defimpl Dammit.SpecProtocol, for: Dammit.ListSpec do
         list
         |> Enum.with_index()
         |> Enum.map(fn {item, index} ->
-          Dammit.Spec.recurse(index, item, item_spec)
+          Anal.Spec.recurse(index, item, item_spec)
         end)
         |> Enum.filter(&(&1 != :ok))
         |> Map.new()

@@ -1,8 +1,8 @@
-defmodule Dammit.StringSpec do
-  use Dammit.Spec, fields: [:regex, :one_of, :one_of_ci]
+defmodule Anal.StringSpec do
+  use Anal.Spec, fields: [:regex, :one_of, :one_of_ci]
 end
 
-defimpl Dammit.SpecProtocol, for: Dammit.StringSpec do
+defimpl Anal.SpecProtocol, for: Anal.StringSpec do
   @non_empty_list_msg "must be a non-empty list of strings"
 
   def validate_spec(%{regex: regex, one_of: one_of})

@@ -1,7 +1,7 @@
-defmodule Dammit.DecimalSpec do
+defmodule Anal.DecimalSpec do
   @decimal_regex ~r/^\s*-?\d*\.?\d+\s*$/
 
-  use Dammit.Spec,
+  use Anal.Spec,
     fields: [
       :gt,
       :lt,
@@ -22,7 +22,7 @@ defmodule Dammit.DecimalSpec do
   def decimal_regex, do: @decimal_regex
 end
 
-defimpl Dammit.SpecProtocol, for: Dammit.DecimalSpec do
+defimpl Anal.SpecProtocol, for: Anal.DecimalSpec do
   @bad_bounds_spec_error_msg "must be a Decimal, a decimal-formatted string, or an integer"
 
   def validate_spec(%{max_decimal_places: max_decimal_places})
@@ -56,7 +56,7 @@ defimpl Dammit.SpecProtocol, for: Dammit.DecimalSpec do
         val
       ) do
     with true <-
-           Dammit.DecimalSpec.is_decimal_string(val),
+           Anal.DecimalSpec.is_decimal_string(val),
          true <- lt == nil or Decimal.lt?(val, lt),
          true <- lte == nil or not Decimal.gt?(val, lte),
          true <- gt == nil or Decimal.gt?(val, gt),
@@ -115,7 +115,7 @@ defimpl Dammit.SpecProtocol, for: Dammit.DecimalSpec do
     end
   end
 
-  def get_error_message(%Dammit.DecimalSpec{} = params) do
+  def get_error_message(%Anal.DecimalSpec{} = params) do
     # add the details in the opposite order that they'll be displayed so we can append to the front of the list and reverse at the end.
     details =
       case params.max_decimal_places do
@@ -175,7 +175,7 @@ defimpl Dammit.SpecProtocol, for: Dammit.DecimalSpec do
         {:ok, Map.put(params, bound, Decimal.new(val))}
 
       str when is_binary(str) ->
-        if Regex.match?(Dammit.DecimalSpec.decimal_regex(), str) do
+        if Regex.match?(Anal.DecimalSpec.decimal_regex(), str) do
           {:ok, Map.put(params, bound, Decimal.new(val))}
         else
           {:error, "#{inspect(bound)} #{@bad_bounds_spec_error_msg}"}

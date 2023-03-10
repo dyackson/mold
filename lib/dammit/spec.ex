@@ -1,5 +1,5 @@
-defmodule Dammit.Spec do
-  @base_fields [:also, :get_error_message, nullable: false]
+defmodule Anal.Spec do
+  @base_fields [:also, :__error_message__, :get_error_message, nullable: false]
 
   defmacro __using__(opts \\ []) do
     user_fields = Keyword.get(opts, :fields, [])
@@ -13,33 +13,33 @@ defmodule Dammit.Spec do
     quote do
       @enforce_keys unquote(required_fields)
       defstruct unquote(fields)
-      alias Dammit.Spec
+      alias Anal.Spec
 
       def new(opts \\ []) do
         spec = struct!(__MODULE__, opts)
         Spec.validate_base_fields!(spec)
 
-        case Dammit.SpecProtocol.validate_spec(spec) do
+        case Anal.SpecProtocol.validate_spec(spec) do
           :ok -> spec
           # this gives the implementation a chance to transform the spec
           {:ok, %__MODULE__{} = spec} -> spec
-          {:error, reason} -> raise Dammit.SpecError.new(reason)
+          {:error, reason} -> raise Anal.SpecError.new(reason)
         end
       end
     end
   end
 
   def validate_base_fields!(%{nullable: val}) when not is_boolean(val),
-    do: raise(Dammit.SpecError.new(":nullable must be a boolean, got #{inspect(val)}"))
+    do: raise(Anal.SpecError.new(":nullable must be a boolean, got #{inspect(val)}"))
 
   def validate_base_fields!(%{also: also})
       when not is_nil(also) and not is_function(also, 1),
-      do: raise(Dammit.SpecError.new(":also must be a 1-arity function, got #{inspect(also)}"))
+      do: raise(Anal.SpecError.new(":also must be a 1-arity function, got #{inspect(also)}"))
 
   def validate_base_fields!(_spec), do: :ok
 
   def validate(val, spec) do
-    Dammit.SpecProtocol.impl_for!(spec)
+    Anal.SpecProtocol.impl_for!(spec)
 
     case {val, spec} do
       {nil, %{nullable: true}} ->
@@ -49,7 +49,7 @@ defmodule Dammit.Spec do
         {:error, "cannot be nil"}
 
       {_, _} ->
-        with :ok <- Dammit.SpecProtocol.validate_val(spec, val) do
+        with :ok <- Anal.SpecProtocol.validate_val(spec, val) do
           apply_also(spec.also, val)
         end
     end
@@ -79,5 +79,5 @@ defmodule Dammit.Spec do
     end
   end
 
-  def is_spec?(val), do: Dammit.SpecProtocol.impl_for(val) != nil
+  def is_spec?(val), do: Anal.SpecProtocol.impl_for(val) != nil
 end

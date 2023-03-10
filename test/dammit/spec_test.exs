@@ -1,5 +1,5 @@
-defmodule Dammit.SpecTest do
+defmodule Anal.SpecTest do
   use ExUnit.Case
   # TODO: figure out what this is
-  doctest Dammit
+  doctest Anal
 end

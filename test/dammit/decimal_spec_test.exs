@@ -1,7 +1,7 @@
-defmodule Dammit.DecimalSpecTest do
-  alias Dammit.SpecError
-  alias Dammit.Spec
-  alias Dammit.DecimalSpec
+defmodule Anal.DecimalSpecTest do
+  alias Anal.SpecError
+  alias Anal.Spec
+  alias Anal.DecimalSpec
 
   use ExUnit.Case
 

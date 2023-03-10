@@ -1,9 +1,9 @@
-defmodule Dammit.MapSpecTest do
-  alias Dammit.Spec
-  alias Dammit.MapSpec
-  alias Dammit.StringSpec
-  alias Dammit.IntegerSpec
-  alias Dammit.BooleanSpec
+defmodule Anal.MapSpecTest do
+  alias Anal.Spec
+  alias Anal.MapSpec
+  alias Anal.StringSpec
+  alias Anal.IntegerSpec
+  alias Anal.BooleanSpec
 
   use ExUnit.Case
 

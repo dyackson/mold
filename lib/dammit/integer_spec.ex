@@ -1,9 +1,9 @@
-defmodule Dammit.IntegerSpec do
-  use Dammit.Spec,
+defmodule Anal.IntegerSpec do
+  use Anal.Spec,
     fields: [:gt, :lt, :gte, :lte, :error_message, :get_error_message]
 end
 
-defimpl Dammit.SpecProtocol, for: Dammit.IntegerSpec do
+defimpl Anal.SpecProtocol, for: Anal.IntegerSpec do
   def validate_spec(params) do
     with :ok <- check_integer_or_nil(params, :lt),
          :ok <- check_integer_or_nil(params, :gt),
@@ -64,7 +64,7 @@ defimpl Dammit.SpecProtocol, for: Dammit.IntegerSpec do
     end
   end
 
-  def get_error_message(%Dammit.IntegerSpec{} = params) do
+  def get_error_message(%Anal.IntegerSpec{} = params) do
     details =
       Enum.reduce(
         [

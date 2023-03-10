@@ -1,4 +1,4 @@
-defmodule Dammit.SpecError do
+defmodule Anal.SpecError do
   defexception [:message]
 
   def new(message), do: %__MODULE__{message: message}

@@ -1,9 +1,9 @@
-defmodule Dammit.MapSpec do
-  use Dammit.Spec,
+defmodule Anal.MapSpec do
+  use Anal.Spec,
     fields: [required: %{}, optional: %{}, exclusive: false]
 end
 
-defimpl Dammit.SpecProtocol, for: Dammit.MapSpec do
+defimpl Anal.SpecProtocol, for: Anal.MapSpec do
   @bad_fields_msg "must be a map or keyword list of field names to specs"
 
   def validate_spec(%{exclusive: exclusive}) when not is_boolean(exclusive),
@@ -38,7 +38,7 @@ defimpl Dammit.SpecProtocol, for: Dammit.MapSpec do
   def is_map_of_specs?(map) do
     Enum.all?(map, fn {name, val} ->
       good_name = is_atom(name) or is_binary(name)
-      good_val = Dammit.Spec.is_spec?(val)
+      good_val = Anal.Spec.is_spec?(val)
       good_name and good_val
     end)
   end
@@ -69,7 +69,7 @@ defimpl Dammit.SpecProtocol, for: Dammit.MapSpec do
       required
       |> Enum.map(fn {field_name, spec} ->
         if Map.has_key?(map, field_name) do
-          Dammit.Spec.recurse(field_name, map[field_name], spec)
+          Anal.Spec.recurse(field_name, map[field_name], spec)
         else
           :ok
         end
@@ -81,7 +81,7 @@ defimpl Dammit.SpecProtocol, for: Dammit.MapSpec do
       optional
       |> Enum.map(fn {field_name, spec} ->
         if Map.has_key?(map, field_name) do
-          Dammit.Spec.recurse(field_name, map[field_name], spec)
+          Anal.Spec.recurse(field_name, map[field_name], spec)
         else
           :ok
         end

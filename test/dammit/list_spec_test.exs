@@ -1,9 +1,9 @@
-defmodule Dammit.ListSpecTest do
-  alias Dammit.SpecError
-  alias Dammit.Spec
-  alias Dammit.ListSpec
-  alias Dammit.StringSpec
-  alias Dammit.IntegerSpec
+defmodule Anal.ListSpecTest do
+  alias Anal.SpecError
+  alias Anal.Spec
+  alias Anal.ListSpec
+  alias Anal.StringSpec
+  alias Anal.IntegerSpec
 
   use ExUnit.Case
 

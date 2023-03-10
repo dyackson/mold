@@ -1,6 +1,6 @@
-defmodule Dammit do
+defmodule Anal do
   @moduledoc """
-  Documentation for `Dammit`.
+  Documentation for `Anal`.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule Dammit do
 
   ## Examples
 
-      iex> Dammit.hello()
+      iex> Anal.hello()
       :world
 
   """
@@ -17,11 +17,11 @@ defmodule Dammit do
   end
 
   @type path :: [atom() | String.t() | non_neg_integer()]
-  @callback validate(val :: any(), spec :: Dammit.Spec.t()) ::
+  @callback validate(val :: any(), spec :: Anal.Spec.t()) ::
               :ok | {:error, String.t()} | {:error, %{optional(path) => String.t()}}
 
   def validate(val, spec) do
-    Dammit.SpecProtocol.impl_for!(spec)
+    Anal.SpecProtocol.impl_for!(spec)
 
     case {val, spec} do
       {nil, %{nullable: true}} ->
@@ -31,7 +31,7 @@ defmodule Dammit do
         {:error, "cannot be nil"}
 
       {_, _} ->
-        with :ok <- Dammit.SpecProtocol.validate_val(spec, val) do
+        with :ok <- Anal.SpecProtocol.validate_val(spec, val) do
           apply_and_fn(spec.and_fn, val)
         end
     end

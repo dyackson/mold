@@ -1,7 +1,7 @@
-defmodule Dammit.IntegerSpecTest do
-  alias Dammit.SpecError
-  alias Dammit.Spec
-  alias Dammit.IntegerSpec
+defmodule Anal.IntegerSpecTest do
+  alias Anal.SpecError
+  alias Anal.Spec
+  alias Anal.IntegerSpec
 
   use ExUnit.Case
 

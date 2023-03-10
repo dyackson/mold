@@ -1,8 +1,8 @@
-defmodule DammitTest do
+defmodule AnalTest do
   use ExUnit.Case
-  doctest Dammit
+  doctest Anal
 
   test "greets the world" do
-    assert Dammit.hello() == :world
+    assert Anal.hello() == :world
   end
 end

@@ -1,6 +1,6 @@
-defmodule Dammit.BooleanSpecTest do
-  alias Dammit.Spec
-  alias Dammit.BooleanSpec
+defmodule Anal.BooleanSpecTest do
+  alias Anal.Spec
+  alias Anal.BooleanSpec
 
   use ExUnit.Case
 
