@@ -1,39 +1,68 @@
 defmodule Anal.DecimalSpecTest do
-  alias Anal.SpecError
-  alias Anal.Spec
-  alias Anal.DecimalSpec
+  alias Anal.SpekError
+  alias Anal.Spek
+  alias Anal.DecimalSpek as Dk
 
   use ExUnit.Case
 
+  %Dk{foo: true} |> Anal.prep_spek() 
+  Lk
+  Sk
+  Ik
+  %Bx
+  
   describe "DecimalSpec.new/1" do
     test "creates a decimal spec" do
-      default_error_message = "must be a decimal-formatted string"
-      assert DecimalSpec.new() == %DecimalSpec{error_message: default_error_message}
+      assert %DecimalSpec{__error_message__: "must be a decimal formatted string"} =
+               DecimalSpec.new()
 
-      assert DecimalSpec.new(gt: 5, lt: "10.01") == %DecimalSpec{
+      assert %DecimalSpec{__error_message__: "if not null, must be a decimal formatted string"} =
+               DecimalSpec.new(can_be_null: true)
+
+      assert %DecimalSpec{
                gt: Decimal.new("5"),
                lt: Decimal.new("10.01"),
-               error_message: default_error_message <> " greater than 5 and less than 10.01"
-             }
+               __error_message__:
+                 "must be a decimal-formatted string greater than 5 and less than 10.01"
+             } = DecimalSpec.new(gt: 5, lt: "10.01")
 
-      assert DecimalSpec.new(gte: 5, lte: "10.01") == %DecimalSpec{
+      assert %DecimalSpec{
+               gt: Decimal.new("5"),
+               lt: Decimal.new("10.01"),
+               __error_message__:
+                 "if not null, must be a decimal-formatted string greater than 5 and less than 10.01"
+             } = DecimalSpec.new(gt: 5, lt: "10.01", can_be_null: true)
+
+      assert %DecimalSpec{
                gte: Decimal.new("5"),
                lte: Decimal.new("10.01"),
-               error_message:
-                 default_error_message <>
-                   " greater than or equal to 5 and less than or equal to 10.01"
-             }
+               __error_message__:
+                 "must be a decimal-formatted string greater than 5 and less than 10.01"
+             } = DecimalSpec.new(gte: 5, lte: "10.01")
 
       # overwrite the default get_error_message function 
-      get_error_message = fn spec -> "gotta be at least #{spec.gte} and at most #{spec.lte}" end
+      get_error_message = fn spec ->
+        how_null_is = if spec.can_be_null, do: "fine", else: "not cool"
+        "null is #{how_null_is}, gotta be at least #{spec.gte} and at most #{spec.lte}"
+      end
 
-      assert DecimalSpec.new(gte: 1, lte: 5, get_error_message: get_error_message) ==
-               %DecimalSpec{
-                 gte: Decimal.new("1"),
-                 lte: Decimal.new("5"),
-                 error_message: "gotta be at least 1 and at most 5",
+      assert %DecimalSpec{
+               gte: Decimal.new("1"),
+               lte: Decimal.new("5"),
+               __error_message__: "null is not cool, gotta be at least 1 and at most 5"
+             } = DecimalSpec.new(gte: 1, lte: 5, get_error_message: get_error_message)
+
+      assert %DecimalSpec{
+               gte: Decimal.new("1"),
+               lte: Decimal.new("5"),
+               __error_message__: "null is fine, gotta be at least 1 and at most 5"
+             } =
+               DecimalSpec.new(
+                 can_be_null: true,
+                 gte: 1,
+                 lte: 5,
                  get_error_message: get_error_message
-               }
+               )
 
       Enum.each([:lt, :lte, :gt, :gte], fn comp ->
         assert_raise SpecError,
@@ -73,26 +102,26 @@ defmodule Anal.DecimalSpecTest do
     test "validates a decimal, basic test" do
       spec = assert DecimalSpec.new()
 
-      assert :ok = Spec.validate("4", spec)
-      assert :ok = Spec.validate(" 4 ", spec)
-      assert :ok = Spec.validate("-14", spec)
-      assert :ok = Spec.validate(" -14 ", spec)
-      assert :ok = Spec.validate("4.00", spec)
-      assert :ok = Spec.validate("-4.00", spec)
-      assert :ok = Spec.validate("-47.00", spec)
-      assert :ok = Spec.validate(".47", spec)
-      assert :ok = Spec.validate(" .47 ", spec)
-      assert :ok = Spec.validate("-.47", spec)
-      assert :ok = Spec.validate(" -.47 ", spec)
-      assert {:error, _} = Spec.validate("foo", spec)
-      assert {:error, _} = Spec.validate("1.1.", spec)
-      assert {:error, _} = Spec.validate(".1.1", spec)
-      assert {:error, _} = Spec.validate(" ", spec)
-      assert {:error, _} = Spec.validate(".", spec)
-      assert {:error, _} = Spec.validate("..", spec)
-      assert {:error, _} = Spec.validate(1, spec)
-      assert {:error, _} = Spec.validate(Decimal.new(4), spec)
-      assert {:error, _} = Spec.validate(nil, spec)
+      assert :ok = Anal.check("4", spec)
+      assert :ok = Anal.check(" 4 ", spec)
+      assert :ok = Anal.check("-14", spec)
+      assert :ok = Anal.check(" -14 ", spec)
+      assert :ok = Anal.check("4.00", spec)
+      assert :ok = Anal.check("-4.00", spec)
+      assert :ok = Anal.check("-47.00", spec)
+      assert :ok = Anal.check(".47", spec)
+      assert :ok = Anal.check(" .47 ", spec)
+      assert :ok = Anal.check("-.47", spec)
+      assert :ok = Anal.check(" -.47 ", spec)
+      assert {:error, _} = Anal.check("foo", spec)
+      assert {:error, _} = Anal.check("1.1.", spec)
+      assert {:error, _} = Anal.check(".1.1", spec)
+      assert {:error, _} = Anal.check(" ", spec)
+      assert {:error, _} = Anal.check(".", spec)
+      assert {:error, _} = Anal.check("..", spec)
+      assert {:error, _} = Anal.check(1, spec)
+      assert {:error, _} = Anal.check(Decimal.new(4), spec)
+      assert {:error, _} = Anal.check(nil, spec)
     end
 
     test "a decimal spec with exclusive bounds" do

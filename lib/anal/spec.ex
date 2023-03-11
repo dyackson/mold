@@ -22,6 +22,7 @@ defmodule Anal.Spec do
         case Anal.SpecProtocol.validate_spec(spec) do
           :ok -> spec
           # this gives the implementation a chance to transform the spec
+          # used by decimal spec to cast bounds to Decimals, eg.
           {:ok, %__MODULE__{} = spec} -> spec
           {:error, reason} -> raise Anal.SpecError.new(reason)
         end
@@ -41,28 +42,29 @@ defmodule Anal.Spec do
   def validate(val, spec) do
     Anal.SpecProtocol.impl_for!(spec)
 
-    case {val, spec} do
-      {nil, %{can_be_nil: true}} ->
-        :ok
+    result =
+      case {val, spec} do
+        {nil, %{can_be_nil: true}} ->
+          :ok
 
-      {nil, %{can_be_nil: false}} ->
-        {:error, "cannot be nil"}
+        {nil, %{can_be_nil: false}} ->
+          :error
 
-      {_, _} ->
-        with :ok <- Anal.SpecProtocol.validate_val(spec, val) do
-          apply_also(spec.also, val)
-        end
-    end
-  end
+        {_, _} ->
+          with :ok <- Anal.SpecProtocol.validate_val(spec, val) do
+            apply_also(spec.also, val)
+          end
+      end
 
-  def apply_also(fun, val) when is_function(fun) do
-    case fun.(val) do
+    case result do
       :ok -> :ok
-      {:error, msg} when is_binary(msg) -> {:error, msg}
+      :error -> spec.__error_message__
     end
   end
 
-  def apply_also(_fun, _val), do: :ok
+  def apply_also(fun, val) when is_function(fun), do: fun.(val)
+
+  def apply_also(nil, _val), do: :ok
 
   def recurse(key_in_parent, value, spec) when is_map(spec) do
     case validate(value, spec) do

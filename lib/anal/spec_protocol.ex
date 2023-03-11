@@ -1,4 +1,4 @@
 defprotocol Anal.SpecProtocol do
-  def validate_spec(spec)
-  def validate_val(spec, value)
+  def prep!(spec)
+  def exam(spec, value)
 end
