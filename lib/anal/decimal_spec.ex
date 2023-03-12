@@ -15,10 +15,9 @@ defmodule Anal.DecimalSpec do
     __prepped__: false
   ]
 
-  defimpl Anal.SpecProtocol do
+  defimpl Anal do
     # not using Decimal lib to decide what's a decimal because it allows integers and scientific notation strings
     @decimal_regex ~r/^\s*-?\d*\.?\d+\s*$/
-    @bad_bounds_spec_error_msg "must be a Decimal, a decimal-formatted string, or an integer"
 
     def prep!(%Spec{} = spec) do
       spec
@@ -37,35 +36,26 @@ defmodule Anal.DecimalSpec do
 
     def check_max_decimal_places!(%Spec{max_decimal_places: max_decimal_places})
         when not is_nil(max_decimal_places) and
-               (not is_integer(max_decimal_places) or max_decimal_places < 1) do
+               (not is_integer(max_decimal_places) or max_decimal_places < 0) do
       raise Anal.SpecError.new(":max_decimal_places must be a positive integer")
     end
 
     def check_max_decimal_places!(%Spec{} = spec), do: spec
 
-    def validate_val(
-          %{
-            lt: lt,
-            gt: gt,
-            lte: lte,
-            gte: gte,
-            max_decimal_places: max_decimal_places
-          },
-          val
-        ) do
+    def exam(%Spec{} = spec, val) do
       with true <- is_decimal_string?(val),
-           true <- lt == nil or Decimal.lt?(val, lt),
-           true <- lte == nil or not Decimal.gt?(val, lte),
-           true <- gt == nil or Decimal.gt?(val, gt),
-           true <- gte == nil or not Decimal.lt?(val, gte),
-           true <- valid_decimal_places(val, max_decimal_places) do
+           true <- spec.lt == nil or Decimal.lt?(val, spec.lt),
+           true <- spec.lte == nil or not Decimal.gt?(val, spec.lte),
+           true <- spec.gt == nil or Decimal.gt?(val, spec.gt),
+           true <- spec.gte == nil or not Decimal.lt?(val, spec.gte),
+           true <- valid_decimal_places?(val, spec.max_decimal_places) do
         :ok
       else
         _ -> :error
       end
     end
 
-    defp valid_decimal_places(val, max_decimal_places) do
+    defp valid_decimal_places?(val, max_decimal_places) do
       case String.split(val, ".") do
         [_] -> true
         [_, after_dot] -> String.length(after_dot) <= max_decimal_places
@@ -175,8 +165,13 @@ defmodule Anal.DecimalSpec do
         end
 
       case spec_or_error do
-        :error -> raise Anal.SpecError.new("#{inspect(key)} #{@bad_bounds_spec_error_msg}")
-        spec -> spec
+        :error ->
+          raise Anal.SpecError.new(
+                  "#{inspect(key)} must be a Decimal, a decimal-formatted string, or an integer"
+                )
+
+        spec ->
+          spec
       end
     end
 

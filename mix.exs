@@ -1,9 +1,9 @@
-defmodule Dammit.MixProject do
+defmodule Anal.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :dammit,
+      app: :anal,
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,

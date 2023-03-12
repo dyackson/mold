@@ -1,10 +1,10 @@
-defmodule Anal.BooleanSpec do
+defmodule Anal.BoolSpec do
   alias __MODULE__, as: Spec
   alias Anal.Common
 
-  defstruct [:__error_message__, :get_error_message, :also, nil_ok?: false, __prepped__: false]
+  defstruct [:error_message, :also, nil_ok?: false, __prepped__: false]
 
-  defimpl Anal.SpecProtocol do
+  defimpl Anal do
     def prep!(%Spec{} = spec) do
       spec
       |> Common.prep!()
@@ -20,13 +20,14 @@ defmodule Anal.BooleanSpec do
            :ok <- Common.apply_also(spec, val) do
         :ok
       else
-        :error -> {:error, spec.__error_message__}
+        :ok -> :ok
+        :error -> {:error, spec.error_message}
       end
     end
 
-    def add_error_message(%Spec{__error_message__: nil} = spec) do
+    def add_error_message(%Spec{error_message: nil} = spec) do
       start = if spec.nil_ok?, do: "if not nil, ", else: ""
-      start <> "must be a boolean"
+      Map.put(spec, :error_message, start <> "must be a boolean")
     end
 
     def add_error_message(%Spec{} = spec), do: spec
