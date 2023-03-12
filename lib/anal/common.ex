@@ -6,13 +6,15 @@ defmodule Anal.Common do
 
   def prep!(%{also: also})
       when not (is_nil(also) or is_function(also, 1)),
-      do: raise(Anal.SpecError.new(":also must be an arity-1 function"))
+      do: raise(Anal.SpecError.new(":also must be an arity-1 function that returns a boolean"))
 
   def prep!(%{} = spec), do: spec
 
   def check_prepped!(%{} = spec) do
     if not spec.__prepped__ do
-      raise(Anal.SpecError.new("you must call Anal.prep/1 on the spec before calling Anal.exam/2"))
+      raise(
+        Anal.SpecError.new("you must call Anal.prep/1 on the spec before calling Anal.exam/2")
+      )
     else
       spec
     end
@@ -25,6 +27,15 @@ defmodule Anal.Common do
   def apply_also(%{also: nil}, _val), do: :ok
 
   def apply_also(%{also: also}, val) do
-    if also.(val), do: :ok, else: :error
+    case also.(val) do
+      true ->
+        :ok
+
+      false ->
+        :error
+
+      other ->
+        raise Anal.SpecError.new(":also must return a boolean, but it returned #{inspect(other)}")
+    end
   end
 end

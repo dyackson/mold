@@ -12,7 +12,7 @@ defmodule Anal.BooTest do
     end
 
     test "SpecError if :also not a arity-1 function" do
-      assert_raise(SpecError, ":also must be an arity-1 function", fn ->
+      assert_raise(SpecError, ":also must be an arity-1 function that returns a boolean", fn ->
         Anal.prep!(%Boo{also: &(&1 + &2)})
       end)
     end
@@ -21,12 +21,12 @@ defmodule Anal.BooTest do
       assert %Boo{error_message: "must be a boolean"} = Anal.prep!(%Boo{})
     end
 
-    test "uses provieded error message" do
+    test "can use custom error message" do
       assert %Boo{error_message: "dammit"} = Anal.prep!(%Boo{error_message: "dammit"})
     end
   end
 
-  describe "Anal.exam with Boo" do
+  describe "Anal.exam using Boo" do
     test "SpecError if the spec isn't prepped" do
       unprepped = %Boo{}
 
@@ -61,6 +61,14 @@ defmodule Anal.BooTest do
 
       :ok = Anal.exam(spec, true)
       {:error, "dammit"} = Anal.exam(spec, "false")
+    end
+
+    test "SpecError if :also doesn't return a boolean" do
+      spec = Anal.prep!(%Boo{error_message: "dammit", also: fn _ -> :some_shit end})
+
+      assert_raise(SpecError, ":also must return a boolean, but it returned :some_shit", fn ->
+        Anal.exam(spec, true)
+      end)
     end
   end
 end
