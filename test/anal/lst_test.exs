@@ -1,32 +1,32 @@
-# defmodule Anal.ListSpecTest do
+# defmodule Anal.LstTest do
 #   alias Anal.SpecError
 #   alias Anal.Spec
-#   alias Anal.ListSpec
-#   alias Anal.StringSpec
-#   alias Anal.IntegerSpec
+#   alias Anal.Lst
+#   alias Anal.Str
+#   alias Anal.Int
 
 #   use ExUnit.Case
 
-#   describe "ListSpec.new()" do
+#   describe "Lst.new()" do
 #     test "creates a list spec" do
-#       assert ListSpec.new(of: StringSpec.new()) == %ListSpec{
+#       assert Lst.new(of: Str.new()) == %Lst{
 #                can_be_nil: false,
-#                of: %StringSpec{},
+#                of: %Str{},
 #                min_len: nil,
 #                max_len: nil,
 #                also: nil
 #              }
 
-#       assert %ListSpec{
+#       assert %Lst{
 #                can_be_nil: true,
-#                of: %StringSpec{},
+#                of: %Str{},
 #                min_len: 1,
 #                max_len: 10,
 #                also: also
 #              } =
-#                ListSpec.new(
+#                Lst.new(
 #                  can_be_nil: true,
-#                  of: StringSpec.new(),
+#                  of: Str.new(),
 #                  min_len: 1,
 #                  max_len: 10,
 #                  also: &(rem(&1, 2) == 0)
@@ -35,51 +35,51 @@
 #       assert is_function(also, 1)
 
 #       assert_raise ArgumentError, ~r/the following keys must also be given.* \[:of\]/, fn ->
-#         ListSpec.new()
+#         Lst.new()
 #       end
 
 #       assert_raise SpecError, ":of must be a spec", fn ->
-#         ListSpec.new(of: "foo")
+#         Lst.new(of: "foo")
 #       end
 
 #       assert_raise SpecError, ":also must be a 1-arity function, got \"foo\"", fn ->
-#         ListSpec.new(of: StringSpec.new(), also: "foo")
+#         Lst.new(of: Str.new(), also: "foo")
 #       end
 
 #       assert_raise SpecError, ":min_len must be a non-negative integer", fn ->
-#         ListSpec.new(of: StringSpec.new(), min_len: "foo")
+#         Lst.new(of: Str.new(), min_len: "foo")
 #       end
 
 #       assert_raise SpecError, ":max_len must be a non-negative integer", fn ->
-#         ListSpec.new(of: StringSpec.new(), max_len: -4)
+#         Lst.new(of: Str.new(), max_len: -4)
 #       end
 
 #       assert_raise SpecError, ":min_len cannot be greater than :max_len", fn ->
-#         ListSpec.new(of: StringSpec.new(), max_len: 1, min_len: 2)
+#         Lst.new(of: Str.new(), max_len: 1, min_len: 2)
 #       end
 
-#       assert %ListSpec{min_len: 1, max_len: nil} = ListSpec.new(of: StringSpec.new(), min_len: 1)
+#       assert %Lst{min_len: 1, max_len: nil} = Lst.new(of: Str.new(), min_len: 1)
 
-#       assert %ListSpec{min_len: nil, max_len: 1} = ListSpec.new(of: StringSpec.new(), max_len: 1)
+#       assert %Lst{min_len: nil, max_len: 1} = Lst.new(of: Str.new(), max_len: 1)
 #     end
 
 #     test "validates using a list spec" do
-#       spec = ListSpec.new(of: StringSpec.new())
+#       spec = Lst.new(of: Str.new())
 
 #       assert :ok = Spec.validate([], spec)
 #       assert Spec.validate(nil, spec) == {:error, "cannot be nil"}
 
-#       min_len_spec = ListSpec.new(of: StringSpec.new(), min_len: 1)
+#       min_len_spec = Lst.new(of: Str.new(), min_len: 1)
 #       assert Spec.validate([], min_len_spec) == {:error, "length must be at least 1"}
 #       assert :ok = Spec.validate(["a"], min_len_spec)
 #       assert :ok = Spec.validate(["a", "b"], min_len_spec)
 
-#       max_len_spec = ListSpec.new(of: StringSpec.new(), max_len: 1)
+#       max_len_spec = Lst.new(of: Str.new(), max_len: 1)
 #       assert :ok = Spec.validate(["a"], max_len_spec)
 #       assert :ok = Spec.validate(["a"], max_len_spec)
 #       assert Spec.validate(["a", "b"], max_len_spec) == {:error, "length cannot exceed 1"}
 
-#       spec = ListSpec.new(of: StringSpec.new())
+#       spec = Lst.new(of: Str.new())
 #       assert :ok = Spec.validate(["a", "b"], spec)
 
 #       assert Spec.validate([1, "a", true], spec) ==
@@ -90,7 +90,7 @@
 #         if sum > 5, do: {:error, "sum is too high"}, else: :ok
 #       end
 
-#       also_spec = ListSpec.new(of: IntegerSpec.new(can_be_nil: false), also: also)
+#       also_spec = Lst.new(of: Int.new(can_be_nil: false), also: also)
 
 #       assert :ok = Spec.validate([1, 0, 0, 0, 0, 3], also_spec)
 #       assert Spec.validate([1, 6], also_spec) == {:error, "sum is too high"}

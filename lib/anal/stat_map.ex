@@ -1,9 +1,9 @@
-# defmodule Anal.MapSpec do
+# defmodule Anal.StatMap do
 #   use Anal.Spec,
 #     fields: [required: %{}, optional: %{}, exclusive: false]
 # end
 
-# defimpl Anal.SpecProtocol, for: Anal.MapSpec do
+# defimpl Anal.SpecProtocol, for: Anal.StatMap do
 #   @bad_fields_msg "must be a map or keyword list of field names to specs"
 
 #   def validate_spec(%{exclusive: exclusive}) when not is_boolean(exclusive),

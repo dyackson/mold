@@ -1,4 +1,4 @@
-defmodule Anal.BoolSpec do
+defmodule Anal.Boo do
   alias __MODULE__, as: Spec
   alias Anal.Common
 

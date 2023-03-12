@@ -1,9 +1,9 @@
-# defmodule Anal.IntegerSpec do
+# defmodule Anal.Int do
 #   use Anal.Spec,
 #     fields: [:gt, :lt, :gte, :lte, :error_message, :get_error_message]
 # end
 
-# defimpl Anal.SpecProtocol, for: Anal.IntegerSpec do
+# defimpl Anal.SpecProtocol, for: Anal.Int do
 #   def validate_spec(params) do
 #     with :ok <- check_integer_or_nil(params, :lt),
 #          :ok <- check_integer_or_nil(params, :gt),
@@ -64,7 +64,7 @@
 #     end
 #   end
 
-#   def get_error_message(%Anal.IntegerSpec{} = params) do
+#   def get_error_message(%Anal.Int{} = params) do
 #     details =
 #       Enum.reduce(
 #         [

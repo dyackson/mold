@@ -1,9 +1,9 @@
-# defmodule Anal.ListSpec do
+# defmodule Anal.Lst do
 #   use Anal.Spec,
 #     fields: [:min_len, :max_len, of: :required]
 # end
 
-# defimpl Anal.SpecProtocol, for: Anal.ListSpec do
+# defimpl Anal.SpecProtocol, for: Anal.Lst do
 #   def validate_spec(%{min_len: min_len})
 #       when not is_nil(min_len) and not (is_integer(min_len) and min_len >= 0),
 #       do: {:error, ":min_len must be a non-negative integer"}

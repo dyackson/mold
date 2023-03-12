@@ -1,15 +1,15 @@
-# defmodule Anal.MapSpecTest do
+# defmodule Anal.StatMapTest do
 #   alias Anal.Spec
-#   alias Anal.MapSpec
-#   alias Anal.StringSpec
-#   alias Anal.IntegerSpec
+#   alias Anal.StatMap
+#   alias Anal.Str
+#   alias Anal.Int
 #   alias Anal.BoolSpec
 
 #   use ExUnit.Case
 
-#   describe "MapSpec.new/1" do
+#   describe "StatMap.new/1" do
 #     test "creates a map spec" do
-#       assert MapSpec.new() == %MapSpec{
+#       assert StatMap.new() == %StatMap{
 #                can_be_nil: false,
 #                required: %{},
 #                optional: %{},
@@ -17,13 +17,13 @@
 #                also: nil
 #              }
 
-#       assert MapSpec.new(can_be_nil: true) == %MapSpec{can_be_nil: true}
+#       assert StatMap.new(can_be_nil: true) == %StatMap{can_be_nil: true}
 #     end
 
 #     test "validate with a map Spec" do
 #       spec =
-#         MapSpec.new(
-#           required: [my_str: StringSpec.new(), my_int: IntegerSpec.new()],
+#         StatMap.new(
+#           required: [my_str: Str.new(), my_int: Int.new()],
 #           optional: %{my_bool: BoolSpec.new(can_be_nil: true)}
 #         )
 
@@ -59,7 +59,7 @@
 #       assert Spec.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, exclusive_spec) ==
 #                {:error, %{[:some_other_field] => "is not allowed"}}
 
-#       empty_map_spec = MapSpec.new()
+#       empty_map_spec = StatMap.new()
 
 #       assert :ok = Spec.validate(%{}, empty_map_spec)
 #       assert :ok = Spec.validate(%{some_other_field: [1, 2, 3]}, empty_map_spec)
@@ -74,12 +74,12 @@
 
 #     test "validate a nested map spec" do
 #       nested_spec =
-#         MapSpec.new(
-#           required: %{my_str: StringSpec.new(), my_int: IntegerSpec.new()},
+#         StatMap.new(
+#           required: %{my_str: Str.new(), my_int: Int.new()},
 #           optional: [my_bool: BoolSpec.new(can_be_nil: true)]
 #         )
 
-#       spec = MapSpec.new(required: [nested: nested_spec])
+#       spec = StatMap.new(required: [nested: nested_spec])
 
 #       :ok = Spec.validate(%{nested: %{my_int: 1, my_str: "foo"}}, spec)
 

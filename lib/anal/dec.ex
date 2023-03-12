@@ -1,6 +1,6 @@
-defmodule Anal.DecimalSpec do
+defmodule Anal.Dec do
   alias Anal.Common
-  alias __MODULE__, as: Spec
+  alias __MODULE__, as: Dec
 
   defstruct [
     :gt,
@@ -9,8 +9,7 @@ defmodule Anal.DecimalSpec do
     :lte,
     :max_decimal_places,
     :also,
-    :get_error_message,
-    :__error_message__,
+    :error_message,
     nil_ok?: false,
     __prepped__: false
   ]
@@ -19,7 +18,7 @@ defmodule Anal.DecimalSpec do
     # not using Decimal lib to decide what's a decimal because it allows integers and scientific notation strings
     @decimal_regex ~r/^\s*-?\d*\.?\d+\s*$/
 
-    def prep!(%Spec{} = spec) do
+    def prep!(%Dec{} = spec) do
       spec
       |> Common.prep!()
       |> check_max_decimal_places!()
@@ -34,15 +33,15 @@ defmodule Anal.DecimalSpec do
       |> Map.put(:__prepped__, true)
     end
 
-    def check_max_decimal_places!(%Spec{max_decimal_places: max_decimal_places})
+    def check_max_decimal_places!(%Dec{max_decimal_places: max_decimal_places})
         when not is_nil(max_decimal_places) and
                (not is_integer(max_decimal_places) or max_decimal_places < 0) do
       raise Anal.SpecError.new(":max_decimal_places must be a positive integer")
     end
 
-    def check_max_decimal_places!(%Spec{} = spec), do: spec
+    def check_max_decimal_places!(%Dec{} = spec), do: spec
 
-    def exam(%Spec{} = spec, val) do
+    def exam(%Dec{} = spec, val) do
       with true <- is_decimal_string?(val),
            true <- spec.lt == nil or Decimal.lt?(val, spec.lt),
            true <- spec.lte == nil or not Decimal.gt?(val, spec.lte),
@@ -62,7 +61,7 @@ defmodule Anal.DecimalSpec do
       end
     end
 
-    defp at_most_one!(%Spec{} = spec, [{key1, val1}, {key2, val2}]) do
+    defp at_most_one!(%Dec{} = spec, [{key1, val1}, {key2, val2}]) do
       if is_nil(val1) || is_nil(val2) do
         spec
       else
@@ -70,7 +69,7 @@ defmodule Anal.DecimalSpec do
       end
     end
 
-    defp ensure_logical_bounds!(%Spec{} = spec) do
+    defp ensure_logical_bounds!(%Dec{} = spec) do
       # at this point, at_most_one/3 has ensured there is at most one lower or upper bound
       lower_bound_tuple =
         case {Map.get(spec, :gt), Map.get(spec, :gte)} do
@@ -88,7 +87,7 @@ defmodule Anal.DecimalSpec do
 
       case {lower_bound_tuple, upper_bound_tuple} do
         {l, u} when is_nil(l) or is_nil(u) ->
-          :ok
+          spec
 
         {{lower_k, lower_v}, {upper_k, upper_v}} ->
           if Decimal.lt?(lower_v, upper_v) do
@@ -99,7 +98,7 @@ defmodule Anal.DecimalSpec do
       end
     end
 
-    def add_error_message(%Anal.DecimalSpec{__error_message__: nil} = spec) do
+    def add_error_message(%Dec{error_message: nil} = spec) do
       # add the details in the opposite order that they'll be displayed so we can append to the front of the list and reverse at the end.
       details =
         case spec.max_decimal_places do
@@ -126,22 +125,22 @@ defmodule Anal.DecimalSpec do
         case Enum.reverse(details) do
           [] -> ""
           [d1] -> " " <> d1
-          [d1, d2] -> " " <> d1 <> ", " <> d2
-          [d1, d2, d3] -> " " <> d1 <> ", " <> d2 <> ", " <> d3
+          [d1, d2] -> " " <> d1 <> " and " <> d2
+          [d1, d2, d3] -> " " <> d1 <> ", " <> d2 <> ", and " <> d3
         end
 
       preamble = if spec.nil_ok?, do: "if not nil, ", else: ""
 
       Map.put(
         spec,
-        :__error_message__,
-        preamble <> "must be a decial-formatted string" <> details
+        :error_message,
+        preamble <> "must be a decimal-formatted string" <> details
       )
     end
 
-    def add_error_message(%Anal.DecimalSpec{} = spec), do: spec
+    def add_error_message(%Dec{} = spec), do: spec
 
-    defp parse_decimal_or_nil!(%Spec{} = spec, [{key, val}]) do
+    defp parse_decimal_or_nil!(%Dec{} = spec, [{key, val}]) do
       spec_or_error =
         case val do
           nil ->
