@@ -1,5 +1,6 @@
 defmodule Anal.Dec do
   alias Anal.Common
+  alias Anal.SpecError
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -33,14 +34,6 @@ defmodule Anal.Dec do
       |> Map.put(:__prepped__, true)
     end
 
-    def check_max_decimal_places!(%Spec{max_decimal_places: max_decimal_places})
-        when not is_nil(max_decimal_places) and
-               (not is_integer(max_decimal_places) or max_decimal_places < 0) do
-      raise Anal.SpecError.new(":max_decimal_places must be a non-negative integer")
-    end
-
-    def check_max_decimal_places!(%Spec{} = spec), do: spec
-
     def exam(%Spec{} = spec, val) do
       spec = Common.check_prepped!(spec)
 
@@ -54,7 +47,7 @@ defmodule Anal.Dec do
       end
     end
 
-    def local_exam(%Spec{} = spec, val) do
+    defp local_exam(%Spec{} = spec, val) do
       with true <- is_decimal_string?(val),
            true <- spec.lt == nil or Decimal.lt?(val, spec.lt),
            true <- spec.lte == nil or not Decimal.gt?(val, spec.lte),
@@ -67,6 +60,14 @@ defmodule Anal.Dec do
       end
     end
 
+    defp check_max_decimal_places!(%Spec{max_decimal_places: max_decimal_places})
+         when not is_nil(max_decimal_places) and
+                (not is_integer(max_decimal_places) or max_decimal_places < 0) do
+      raise SpecError.new(":max_decimal_places must be a non-negative integer")
+    end
+
+    defp check_max_decimal_places!(%Spec{} = spec), do: spec
+
     defp valid_decimal_places?(val, max_decimal_places) do
       case String.split(val, ".") do
         [_] -> true
@@ -78,21 +79,21 @@ defmodule Anal.Dec do
       if is_nil(val1) || is_nil(val2) do
         spec
       else
-        raise Anal.SpecError.new("cannot use both #{inspect(key1)} and #{inspect(key2)}")
+        raise SpecError.new("cannot use both #{inspect(key1)} and #{inspect(key2)}")
       end
     end
 
     defp ensure_logical_bounds!(%Spec{} = spec) do
       # at this point, at_most_one/3 has ensured there is at most one lower or upper bound
       lower_bound_tuple =
-        case {Map.get(spec, :gt), Map.get(spec, :gte)} do
+        case {spec.gt, spec.gte} do
           {nil, nil} -> nil
           {gt, nil} -> {:gt, gt}
           {nil, gte} -> {:gte, gte}
         end
 
       upper_bound_tuple =
-        case {Map.get(spec, :lt), Map.get(spec, :lte)} do
+        case {spec.lt, spec.lte} do
           {nil, nil} -> nil
           {lt, nil} -> {:lt, lt}
           {nil, lte} -> {:lte, lte}
@@ -106,7 +107,7 @@ defmodule Anal.Dec do
           if Decimal.lt?(lower_v, upper_v) do
             spec
           else
-            raise Anal.SpecError.new("#{inspect(lower_k)} must be less than #{inspect(upper_k)}")
+            raise SpecError.new("#{inspect(lower_k)} must be less than #{inspect(upper_k)}")
           end
       end
     end
@@ -178,7 +179,7 @@ defmodule Anal.Dec do
 
       case spec_or_error do
         :error ->
-          raise Anal.SpecError.new(
+          raise SpecError.new(
                   "#{inspect(key)} must be a Decimal, a decimal-formatted string, or an integer"
                 )
 
