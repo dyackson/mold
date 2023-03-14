@@ -1,93 +1,178 @@
-# defmodule Anal.IntTest do
-#   alias Anal.SpecError
-#   alias Anal.Spec
-#   alias Anal.Int
+defmodule Anal.IntTest do
+  use ExUnit.Case
 
-#   use ExUnit.Case
+  require Integer
 
-#   describe "Int.new/1" do
-#     test "creates as integer spec" do
-#       default_error_message = "must be an integer"
+  alias Anal.Int
+  alias Anal.SpecError
 
-#       assert Int.new(can_be_nil: true) == %Int{
-#                can_be_nil: true,
-#                error_message: default_error_message
-#              }
+  describe "Anal.prep! a Int raises a SpecError when" do
+    test "nil_ok? not a boolean" do
+      assert_raise(SpecError, ":nil_ok? must be a boolean", fn ->
+        Anal.prep!(%Int{nil_ok?: "yuh"})
+      end)
+    end
 
-#       assert Int.new() == %Int{
-#                can_be_nil: false,
-#                error_message: default_error_message
-#              }
+    test ":also is not an arity-1 function" do
+      assert_raise(SpecError, ":also must be an arity-1 function that returns a boolean", fn ->
+        Anal.prep!(%Int{also: &(&1 + &2)})
+      end)
+    end
 
-#       Enum.each([:gt, :lt, :gte, :lte], fn comp ->
-#         assert_raise SpecError, ":#{comp} must be an integer", fn ->
-#           Int.new([{comp, "5"}])
-#         end
-#       end)
+    test "given an invalid bound" do
+      Enum.each([:lt, :lte, :gt, :gte], fn bound ->
+        spec = Map.put(%Int{}, bound, "some shit")
 
-#       assert_raise SpecError, "cannot use both :gt and :gte", fn ->
-#         Int.new(gt: 5, gte: 3)
-#       end
+        assert_raise(
+          SpecError,
+          "#{inspect(bound)} must be an integer",
+          fn -> Anal.prep!(spec) end
+        )
+      end)
+    end
 
-#       assert_raise SpecError, "cannot use both :lt and :lte", fn ->
-#         Int.new(lt: 5, lte: 3)
-#       end
+    test "trying to use both upper or both lower bounds" do
+      assert_raise SpecError, "cannot use both :gt and :gte", fn ->
+        Anal.prep!(%Int{gt: 5, gte: 3})
+      end
 
-#       # lt/gt
-#       assert_raise SpecError, ":gt must be less than :lt", fn ->
-#         Int.new(lt: 0, gt: 3)
-#       end
+      assert_raise SpecError, "cannot use both :lt and :lte", fn ->
+        Anal.prep!(%Int{lt: 5, lte: 3})
+      end
+    end
 
-#       assert_raise SpecError, ":gt must be less than :lt", fn ->
-#         Int.new(lt: 0, gt: 0)
-#       end
+    test "lower bound is greater than upper bound" do
+      for lower <- [:gt, :gte], upper <- [:lt, :lte] do
+        assert_raise SpecError, "#{inspect(lower)} must be less than #{inspect(upper)}", fn ->
+          spec = Map.merge(%Int{}, %{lower => 5, upper => 3})
+          Anal.prep!(spec)
+        end
 
-#       # lte/gt
-#       assert_raise SpecError, ":gt must be less than :lte", fn ->
-#         Int.new(lte: 0, gt: 3)
-#       end
+        assert_raise SpecError, "#{inspect(lower)} must be less than #{inspect(upper)}", fn ->
+          spec = Map.merge(%Int{}, %{lower => 5, upper => 5})
+          Anal.prep!(spec)
+        end
+      end
+    end
+  end
 
-#       assert_raise SpecError, ":gt must be less than :lte", fn ->
-#         Int.new(lte: 0, gt: 0)
-#       end
+  describe "Anal.prep! a valid Int" do
+    test "with bounds" do
+      assert %Int{} = Anal.prep!(%Int{gt: 1, lte: 4})
+    end
 
-#       # lt/gte
-#       assert_raise SpecError, ":gte must be less than :lt", fn ->
-#         Int.new(lt: 0, gte: 3)
-#       end
+    test "adds the default error message" do
+      assert %Int{error_message: "must be an integer"} = Anal.prep!(%Int{})
 
-#       assert_raise SpecError, ":gte must be less than :lt", fn ->
-#         Int.new(lt: 0, gte: 0)
-#       end
+      assert %Int{error_message: "if not nil, must be an integer"} =
+               Anal.prep!(%Int{nil_ok?: true})
 
-#       # lte/gte
-#       assert_raise SpecError, ":gte must be less than :lte", fn ->
-#         Int.new(lte: 0, gte: 3)
-#       end
+      assert %Int{
+               error_message: "must be an integer"
+             } = Anal.prep!(%Int{})
 
-#       assert_raise SpecError, ":gte must be less than :lte", fn ->
-#         Int.new(lte: 0, gte: 0)
-#       end
-#     end
+      assert %Int{
+               error_message: "must be an integer less than 5"
+             } = Anal.prep!(%Int{lt: 5})
 
-#     test "validate with an integer Spec" do
-#       spec = Int.new()
-#       assert :ok = Spec.validate(9, spec)
-#       assert {:error, "must be an integer"} = Spec.validate("foo", spec)
-#       assert {:error, "cannot be nil"} = Spec.validate(nil, spec)
-#       assert :ok = Spec.validate(nil, Int.new(can_be_nil: true))
+      assert %Int{
+               error_message: "must be an integer greater than 5"
+             } = Anal.prep!(%Int{gt: 5})
 
-#       bounds_spec = Int.new(gt: 0, lt: 10)
-#       assert :ok = Spec.validate(5, bounds_spec)
-#       assert {:error, "must be less than 10"} = Spec.validate(10, bounds_spec)
-#       assert {:error, "must be greater than 0"} = Spec.validate(0, bounds_spec)
+      assert %Int{
+               error_message: "must be an integer less than or equal to 5"
+             } = Anal.prep!(%Int{lte: 5})
 
-#       bounds_spec = Int.new(gte: 0, lte: 10)
-#       assert :ok = Spec.validate(5, bounds_spec)
-#       assert :ok = Spec.validate(0, bounds_spec)
-#       assert :ok = Spec.validate(10, bounds_spec)
-#       assert {:error, "must be less than or equal to 10"} = Spec.validate(11, bounds_spec)
-#       assert {:error, "must be greater than or equal to 0"} = Spec.validate(-1, bounds_spec)
-#     end
-#   end
-# end
+      assert %Int{
+               error_message: "must be an integer greater than or equal to 5"
+             } = Anal.prep!(%Int{gte: 5})
+
+      assert %Int{
+               error_message: "must be an integer greater than or equal to 5 and less than 20"
+             } = Anal.prep!(%Int{gte: 5, lt: 20})
+
+      assert %Int{
+               error_message: "must be an integer greater than 5 and less than or equal to 20"
+             } = Anal.prep!(%Int{gt: 5, lte: 20})
+    end
+
+    test "can use custom error message" do
+      assert %Int{error_message: "dammit"} = Anal.prep!(%Int{error_message: "dammit"})
+    end
+  end
+
+  describe "Anal.exam using Int" do
+    test "SpecError if the spec isn't prepped" do
+      unprepped = %Int{}
+
+      assert_raise(
+        SpecError,
+        "you must call Anal.prep/1 on the spec before calling Anal.exam/2",
+        fn ->
+          Anal.exam(unprepped, true)
+        end
+      )
+    end
+
+    test "allows nil iff nil_ok?" do
+      nil_ok_spec = Anal.prep!(%Int{nil_ok?: true})
+      nil_not_ok_spec = Anal.prep!(%Int{error_message: "dammit"})
+
+      :ok = Anal.exam(nil_ok_spec, nil)
+      {:error, "dammit"} = Anal.exam(nil_not_ok_spec, nil)
+    end
+
+    test "fail if not an integer" do
+      spec = Anal.prep!(%Int{error_message: "dammit"})
+      [1, -1] |> Enum.each(&assert :ok = Anal.exam(spec, &1))
+
+      ["1", true, "bla", Decimal.new(1)]
+      |> Enum.each(&assert {:error, "dammit"} = Anal.exam(spec, &1))
+    end
+
+    test "takes an :also function" do
+      spec = Anal.prep!(%Int{error_message: "dammit", also: &Integer.is_even/1})
+
+      :ok = Anal.exam(spec, 4)
+      {:error, "dammit"} = Anal.exam(spec, 5)
+    end
+
+    test "SpecError if :also doesn't return a boolean" do
+      spec = Anal.prep!(%Int{error_message: "dammit", also: fn _ -> :some_shit end})
+
+      assert_raise(SpecError, ":also must return a boolean, but it returned :some_shit", fn ->
+        Anal.exam(spec, 1)
+      end)
+    end
+
+    test "checks :gt" do
+      spec = Anal.prep!(%Int{gt: 2, error_message: "dammit"})
+      assert :ok = Anal.exam(spec, 3)
+      [1, 2] |> Enum.each(&assert {:error, "dammit"} = Anal.exam(spec, &1))
+    end
+
+    test "checks :gte" do
+      spec = Anal.prep!(%Int{gte: 2, error_message: "dammit"})
+      [2, 3] |> Enum.each(&assert :ok = Anal.exam(spec, &1))
+      assert {:error, "dammit"} = Anal.exam(spec, 1)
+    end
+
+    test "checks :lt" do
+      spec = Anal.prep!(%Int{lt: 2, error_message: "dammit"})
+      assert :ok = Anal.exam(spec, 1)
+      [2, 3] |> Enum.each(&assert {:error, "dammit"} = Anal.exam(spec, &1))
+    end
+
+    test "checks :lte" do
+      spec = Anal.prep!(%Int{lte: 2, error_message: "dammit"})
+      [1, 2] |> Enum.each(&assert :ok = Anal.exam(spec, &1))
+      assert {:error, "dammit"} = Anal.exam(spec, 3)
+    end
+
+    test "checks both an upper and lower bound" do
+      spec = Anal.prep!(%Int{gte: 5, lt: 10, error_message: "dammit"})
+      [5, 9] |> Enum.each(&assert :ok = Anal.exam(spec, &1))
+      [4, 11] |> Enum.each(&assert {:error, "dammit"} = Anal.exam(spec, &1))
+    end
+  end
+end

@@ -54,7 +54,8 @@ defmodule Anal.Int do
       end
     end
 
-    defp check_integer_or_nil!(%Spec{} = spec, [{_key, val}]) when is_integer(val), do: spec
+    defp check_integer_or_nil!(%Spec{} = spec, [{_key, val}]) when is_integer(val) or is_nil(val),
+      do: spec
 
     defp check_integer_or_nil!(%Spec{}, [{key, _val}]),
       do: raise(SpecError.new("#{inspect(key)} must be an integer"))
@@ -87,7 +88,7 @@ defmodule Anal.Int do
         {l, u} when is_nil(l) or is_nil(u) ->
           spec
 
-        {{lower_k, lower_v}, {upper_k, upper_v}} when not (lower_v < upper_v) ->
+        {{lower_k, lower_v}, {upper_k, upper_v}} ->
           if lower_v < upper_v do
             spec
           else
@@ -96,7 +97,7 @@ defmodule Anal.Int do
       end
     end
 
-    def add_error_message(%Anal.Int{} = spec) do
+    def add_error_message(%Anal.Int{error_message: nil} = spec) do
       details =
         Enum.reduce(
           [
@@ -131,5 +132,7 @@ defmodule Anal.Int do
         preamble <> "must be an integer" <> details
       )
     end
+
+    def add_error_message(%Anal.Int{} = spec), do: spec
   end
 end
