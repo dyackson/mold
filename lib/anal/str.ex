@@ -51,6 +51,15 @@ defmodule Anal.Str do
          when not is_nil(one_of) and not is_nil(one_of_ci),
          do: raise(SpecError.new("cannot use both :one_of and :one_of_ci"))
 
+    defp local_prep!(%Spec{} = spec)
+         when (not is_nil(spec.one_of) or not is_nil(spec.one_of_ci) or not is_nil(spec.regex)) and
+                (not is_nil(spec.min_length) or not is_nil(spec.max_length)) do
+      field1 = Enum.find([:one_of, :one_of_ci, :regex], &(Map.get(spec, &1) != nil))
+      field2 = Enum.find([:min_length, :max_length], &(Map.get(spec, &1) != nil))
+
+      raise SpecError.new("cannot use both #{inspect(field1)} and #{inspect(field2)}")
+    end
+
     defp local_prep!(%Spec{one_of: one_of}) when not (is_list(one_of) or is_nil(one_of)),
       do: raise(SpecError.new(":one_of #{@non_empty_list_msg}"))
 
@@ -90,6 +99,21 @@ defmodule Anal.Str do
       end
     end
 
+    defp local_prep!(%Spec{min_length: min})
+         when not (is_nil(min) or (is_integer(min) and min > 0)) do
+      raise SpecError.new(":min_length must be a positive integer")
+    end
+
+    defp local_prep!(%Spec{max_length: max})
+         when not (is_nil(max) or (is_integer(max) and max > 0)) do
+      raise SpecError.new(":max_length must be a positive integer")
+    end
+
+    defp local_prep!(%Spec{min_length: min, max_length: max})
+         when is_integer(min) and is_integer(max) and min > max do
+      raise SpecError.new(":max_length must be greater than or equal to :min_length")
+    end
+
     defp local_prep!(%Spec{} = spec), do: spec
 
     defp add_error_message(%Spec{error_message: nil} = spec) do
@@ -99,7 +123,7 @@ defmodule Anal.Str do
       message_end =
         case spec do
           %{regex: regex} when regex != nil ->
-            " that matches regex #{Regex.source(regex)}"
+            " that matches the regex #{inspect(regex)}"
 
           %{one_of: one_of} when one_of != nil ->
             " that is a case-sensative match for one of: #{Enum.join(one_of, ", ")}"
@@ -111,7 +135,7 @@ defmodule Anal.Str do
             ""
         end
 
-      Map.put(spec, :error_message, message_start ++ message_end)
+      Map.put(spec, :error_message, message_start <> message_end)
     end
 
     defp add_error_message(%Spec{} = spec), do: spec
