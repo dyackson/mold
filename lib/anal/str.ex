@@ -117,25 +117,34 @@ defmodule Anal.Str do
     defp local_prep!(%Spec{} = spec), do: spec
 
     defp add_error_message(%Spec{error_message: nil} = spec) do
-      message_start = "must be a string"
-
-      # a valid spec will use at most one of regex, one_of, and one_of_ci
-      message_end =
+      # a valid spec will use at most one of regex, one_of, one_of_ci, and length restrictions
+      error_message =
         case spec do
           %{regex: regex} when regex != nil ->
-            " that matches the regex #{inspect(regex)}"
+            "must be a string matching the regex #{inspect(regex)}"
 
           %{one_of: one_of} when one_of != nil ->
-            " that is a case-sensative match for one of: #{Enum.join(one_of, ", ")}"
+            one_of = one_of |> Enum.map(&~s["#{&1}"]) |> Enum.join(", ")
+            "must be one of these strings (with matching case): #{one_of}"
 
           %{one_of_ci: one_of_ci} when one_of_ci != nil ->
-            " that is a case-insensative match for one of: #{Enum.join(one_of_ci, ", ")}"
+            one_of_ci = one_of_ci |> Enum.map(&~s["#{&1}"]) |> Enum.join(", ")
+            "must be one of these strings (case doesn't have to match): #{one_of_ci}"
+
+          %{min_length: min, max_length: nil} when is_integer(min) ->
+            "must be a string with at least #{min} characters"
+
+          %{min_length: nil, max_length: max} when is_integer(max) ->
+            "must be a string with at most #{max} characters"
+
+          %{min_length: min, max_length: max} when is_integer(min) and is_integer(max) ->
+            "must be a string with at least #{min} and at most #{max} characters"
 
           _ ->
-            ""
+            "must be a string"
         end
 
-      Map.put(spec, :error_message, message_start <> message_end)
+      Map.put(spec, :error_message, error_message)
     end
 
     defp add_error_message(%Spec{} = spec), do: spec
@@ -152,6 +161,17 @@ defmodule Anal.Str do
 
     def local_exam(%Spec{one_of_ci: already_downcased}, val) when already_downcased != nil do
       if String.downcase(val) in already_downcased, do: :ok, else: :error
+    end
+
+    def local_exam(%Spec{min_length: min, max_length: max}, val)
+        when is_integer(min) or is_integer(max) do
+      len = String.length(val)
+
+      cond do
+        is_integer(min) and len < min -> :error
+        is_integer(max) and len > max -> :error
+        true -> :ok
+      end
     end
 
     def local_exam(%Spec{}, _val), do: :ok

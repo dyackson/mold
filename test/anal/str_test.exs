@@ -90,133 +90,119 @@ defmodule Anal.StrTest do
     test "adds a default error message" do
       assert %Str{error_message: "must be a string"} = Anal.prep!(%Str{})
 
-      assert %Str{error_message: "must be a string that matches the regex ~r/^\\d+$/"} =
+      assert %Str{
+               error_message:
+                 "must be one of these strings (with matching case): \"Simon\", \"Garfunkel\""
+             } = Anal.prep!(%Str{one_of: ["Simon", "Garfunkel"]})
+
+      assert %Str{
+               error_message:
+                 "must be one of these strings (case doesn't have to match): \"simon\", \"garfunkel\""
+             } = Anal.prep!(%Str{one_of_ci: ["Simon", "Garfunkel"]})
+
+      assert %Str{error_message: "must be a string matching the regex ~r/^\\d+$/"} =
                Anal.prep!(%Str{regex: ~r/^\d+$/})
+
+      assert %Str{error_message: "must be a string with at least 5 characters"} =
+               Anal.prep!(%Str{min_length: 5})
+
+      assert %Str{error_message: "must be a string with at most 10 characters"} =
+               Anal.prep!(%Str{max_length: 10})
 
       assert %Str{error_message: "must be a string with at least 5 and at most 10 characters"} =
                Anal.prep!(%Str{min_length: 5, max_length: 10})
     end
+
+    test "accepts an error message" do
+      assert %Str{error_message: "dammit"} = Anal.prep!(%Str{error_message: "dammit"})
+    end
   end
 
-  #   describe "Str.new/1" do
-  #     test "creates a string spec" do
-  #       a_regex = ~r/^\d+$/
-  #       assert Str.new() == %Str{can_be_nil: false}
-  #       assert Str.new(can_be_nil: false) == %Str{can_be_nil: false}
-  #       assert Str.new(regex: a_regex) == %Str{can_be_nil: false, regex: a_regex}
+  describe "Anal.exam using Str" do
+    test "SpecError if the spec isn't prepped" do
+      unprepped = %Str{}
 
-  #       assert Str.new(one_of: ["foo", "bar"]) == %Str{
-  #                can_be_nil: false,
-  #                one_of: ["foo", "bar"]
-  #              }
+      assert_raise(
+        SpecError,
+        "you must call Anal.prep/1 on the spec before calling Anal.exam/2",
+        fn ->
+          Anal.exam(unprepped, true)
+        end
+      )
+    end
 
-  #       assert Str.new(one_of_ci: ["foo", "bar"]) == %Str{
-  #                can_be_nil: false,
-  #                one_of_ci: ["foo", "bar"]
-  #              }
+    test "allows nil iff nil_ok?" do
+      nil_ok_spec = Anal.prep!(%Str{nil_ok?: true})
+      nil_not_ok_spec = Anal.prep!(%Str{error_message: "dammit"})
 
-  #       assert %Str{can_be_nil: false, also: also} =
-  #                Str.new(can_be_nil: false, also: fn str -> String.contains?(str, "x") end)
+      :ok = Anal.exam(nil_ok_spec, nil)
+      {:error, "dammit"} = Anal.exam(nil_not_ok_spec, nil)
+    end
 
-  #       assert is_function(also, 1)
+    test "fail if not a string" do
+      spec = Anal.prep!(%Str{error_message: "dammit"})
+      assert :ok = Anal.exam(spec, "yes")
+      assert :ok = Anal.exam(spec, "")
 
-  #       assert_raise SpecError, ":also must be a 1-arity function, got \"foo\"", fn ->
-  #         Str.new(can_be_nil: false, also: "foo")
-  #       end
+      [1, true, %{}, Decimal.new(1)]
+      |> Enum.each(&assert {:error, "dammit"} = Anal.exam(spec, &1))
+    end
 
-  #       assert_raise SpecError, ~r/also must be a 1-arity function, got/, fn ->
-  #         Str.new(can_be_nil: false, also: fn _x, _y -> nil end)
-  #       end
+    test "takes an :also function" do
+      spec = Anal.prep!(%Str{error_message: "dammit", also: &(&1 == String.reverse(&1))})
 
-  #       assert_raise SpecError, ":can_be_nil must be a boolean, got \"foo\"", fn ->
-  #         Str.new(can_be_nil: "foo")
-  #       end
+      :ok = Anal.exam(spec, "able was i ere i saw elba")
+      {:error, "dammit"} = Anal.exam(spec, "anagram")
+    end
 
-  #       assert_raise KeyError, ~r/key :foo not found/, fn ->
-  #         Str.new(foo: "bar")
-  #       end
+    test "SpecError if :also doesn't return a boolean" do
+      spec = Anal.prep!(%Str{error_message: "dammit", also: fn _ -> :some_shit end})
 
-  #       assert_raise SpecError, ":regex must be a Regex", fn ->
-  #         Str.new(regex: "bar")
-  #       end
+      assert_raise(SpecError, ":also must return a boolean, but it returned :some_shit", fn ->
+        Anal.exam(spec, "pow")
+      end)
+    end
 
-  #       assert_raise SpecError, ":one_of must be a non-empty list of strings", fn ->
-  #         Str.new(one_of: "foo")
-  #       end
+    test "checks :regex" do
+      spec = Anal.prep!(%Str{error_message: "dammit", regex: ~r/^\d+$/})
+      assert :ok = Anal.exam(spec, "123")
+      assert {:error, "dammit"} = Anal.exam(spec, "1 2 3")
+    end
 
-  #       assert_raise SpecError, ":one_of must be a non-empty list of strings", fn ->
-  #         Str.new(one_of: [])
-  #       end
+    test "checks :one_of" do
+      spec = Anal.prep!(%Str{error_message: "dammit", one_of: ["Paul", "Art"]})
+      assert :ok = Anal.exam(spec, "Art")
+      assert {:error, "dammit"} = Anal.exam(spec, "art")
+      assert {:error, "dammit"} = Anal.exam(spec, "steve")
+    end
 
-  #       assert_raise SpecError, ":one_of_ci must be a non-empty list of strings", fn ->
-  #         Str.new(one_of_ci: "foo")
-  #       end
+    test "checks :one_of_ci" do
+      spec = Anal.prep!(%Str{error_message: "dammit", one_of_ci: ["Paul", "Art"]})
+      assert :ok = Anal.exam(spec, "Art")
+      assert :ok = Anal.exam(spec, "art")
+      assert {:error, "dammit"} = Anal.exam(spec, "steve")
+    end
 
-  #       assert_raise SpecError, ":one_of_ci must be a non-empty list of strings", fn ->
-  #         Str.new(one_of_ci: [])
-  #       end
+    test "checks :min_length" do
+      spec = Anal.prep!(%Str{error_message: "dammit", min_length: 4})
+      assert :ok = Anal.exam(spec, "12345")
+      assert :ok = Anal.exam(spec, "1234")
+      assert {:error, "dammit"} = Anal.exam(spec, "123")
+    end
 
-  #       assert_raise SpecError, "cannot use both :regex and :one_of_ci", fn ->
-  #         Str.new(one_of_ci: ["foo"], regex: a_regex)
-  #       end
+    test "checks :max_length" do
+      spec = Anal.prep!(%Str{error_message: "dammit", max_length: 4})
+      assert {:error, "dammit"} = Anal.exam(spec, "12345")
+      assert :ok = Anal.exam(spec, "1234")
+      assert :ok = Anal.exam(spec, "123")
+    end
 
-  #       assert_raise SpecError, "cannot use both :regex and :one_of", fn ->
-  #         Str.new(one_of: ["foo"], regex: a_regex)
-  #       end
-
-  #       assert_raise SpecError, "cannot use both :one_of and :one_of_ci", fn ->
-  #         Str.new(one_of: ["foo"], one_of_ci: ["foo"])
-  #       end
-  #     end
-
-  #     test "validates values" do
-  #       spec = Str.new()
-  #       assert :ok = Spec.validate("foo", spec)
-  #       assert {:error, "cannot be nil"} = Spec.validate(nil, spec)
-  #       assert {:error, "must be a string"} = Spec.validate(5, spec)
-
-  #       can_be_nil_spec = Str.new(can_be_nil: true)
-  #       assert :ok = Spec.validate("foo", can_be_nil_spec)
-  #       assert :ok = Spec.validate(nil, can_be_nil_spec)
-
-  #       re_spec = Str.new(regex: ~r/^\d+$/)
-  #       assert :ok = Spec.validate("1", re_spec)
-  #       assert {:error, "cannot be nil"} = Spec.validate(nil, re_spec)
-
-  #       also = &if String.contains?(&1, "x"), do: :ok, else: {:error, "need an x"}
-
-  #       also_spec = Str.new(can_be_nil: false, also: also)
-
-  #       assert :ok = Spec.validate("box", also_spec)
-  #       assert {:error, "need an x"} = Spec.validate("bocks", also_spec)
-
-  #       can_be_nil_also_spec = Str.new(can_be_nil: true, also: also)
-
-  #       assert :ok = Spec.validate(nil, can_be_nil_also_spec)
-  #       assert {:error, "need an x"} = Spec.validate("bocks", can_be_nil_also_spec)
-
-  #       # TODO: implement and test min_len, max_len,
-  #       one_of_spec = Str.new(one_of: ["foo", "bar"])
-  #       assert :ok = Spec.validate("foo", one_of_spec)
-
-  #       assert {:error, "must be a case-sensative match for one of: foo, bar"} =
-  #                Spec.validate("farts", one_of_spec)
-
-  #       one_of_ci_spec = Str.new(one_of_ci: ["foo", "BAR"])
-  #       assert :ok = Spec.validate("fOo", one_of_ci_spec)
-  #       assert :ok = Spec.validate("BaR", one_of_ci_spec)
-
-  #       assert {:error, "must be a case-insensative match for one of: foo, bar"} =
-  #                Spec.validate("farts", one_of_ci_spec)
-  #     end
-
-  #     test "with also" do
-  #       also = fn str ->
-  #         if String.contains?(str, "x"), do: :ok, else: {:error, "need an x"}
-  #       end
-
-  #       assert :ok = Spec.validate("box", Str.new(also: also))
-  #       assert {:error, "need an x"} = Spec.validate("bo", Str.new(also: also))
-  #     end
-  #   end
+    test "checks both :min_length and :max_length" do
+      spec = Anal.prep!(%Str{error_message: "dammit", min_length: 3, max_length: 4})
+      assert {:error, "dammit"} = Anal.exam(spec, "12345")
+      assert :ok = Anal.exam(spec, "1234")
+      assert :ok = Anal.exam(spec, "123")
+      assert {:error, "dammit"} = Anal.exam(spec, "12")
+    end
+  end
 end
