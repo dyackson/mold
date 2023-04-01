@@ -1,3 +1,37 @@
+defmodule Anal.RecTest do
+  alias Anal.SpecError
+  alias Anal.Rec
+
+  use ExUnit.Case
+
+  describe "Anal.prep! a Rec raises a SpecError when" do
+    test "nil_ok? not a boolean" do
+      assert_raise(SpecError, ":nil_ok? must be a boolean", fn ->
+        Anal.prep!(%Rec{nil_ok?: "yuh"})
+      end)
+    end
+
+    test ":also is not an arity-1 function" do
+      assert_raise(SpecError, ":also must be an arity-1 function that returns a boolean", fn ->
+        Anal.prep!(%Rec{also: &(&1 + &2)})
+      end)
+    end
+
+    test ":exclusive is true but no fields defined" do
+      assert_raise(SpecError, ":required and/or :optional must be used if :exclusive is true", fn ->
+        Anal.prep!(%Rec{exclusive: true})
+      end)
+    end
+
+
+
+    #   assert_raise(SpecError, "cannot use both :one_of_ci and :max_length", fn ->
+    #     Anal.prep!(%Str{max_length: 5, one_of_ci: ["fool", "bart"]})
+    #   end)
+    # end
+  end
+end
+
 # defmodule Anal.StatMapTest do
 #   alias Anal.Spec
 #   alias Anal.StatMap
