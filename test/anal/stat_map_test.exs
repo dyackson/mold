@@ -37,7 +37,6 @@ defmodule Anal.RecTest do
       )
     end
 
-    @tag :this
     test ":optional or :required is not a spec map" do
       [
         "goo",
@@ -128,33 +127,86 @@ defmodule Anal.RecTest do
                error_message:
                  "must be a record with only the required keys \"r1\", \"r2\" and the optional keys \"o1\", \"o2\""
              } = Anal.prep!(%Rec{optional: optional, required: required, exclusive?: true})
-
-      # assert %Str{
-      #          error_message:
-      #            "must be one of these strings (with matching case): |"Simon|", \"Garfunkel\""
-      #        } = Anal.prep!(%Str{one_of: ["Simon", "Garfunkel"]})
-
-      # assert %Str{
-      #          error_message:
-      #            "must be one of these strings (case doesn't have to match): \"simon\", \"garfunkel\""
-      #        } = Anal.prep!(%Str{one_of_ci: ["Simon", "Garfunkel"]})
-
-      # assert %Str{error_message: "must be a string matching the regex ~r/^\\d+$/"} =
-      #          Anal.prep!(%Str{regex: ~r/^\d+$/})
-
-      # assert %Str{error_message: "must be a string with at least 5 characters"} =
-      #          Anal.prep!(%Str{min_length: 5})
-
-      # assert %Str{error_message: "must be a string with at most 10 characters"} =
-      #          Anal.prep!(%Str{max_length: 10})
-
-      # assert %Str{error_message: "must be a string with at least 5 and at most 10 characters"} =
-      #          Anal.prep!(%Str{min_length: 5, max_length: 10})
     end
 
-    # test "accepts an error message" do
-    #   assert %Str{error_message: "dammit"} = Anal.prep!(%Str{error_message: "dammit"})
-    # end
+    test "accepts an error message" do
+      assert %Rec{error_message: "dammit"} = Anal.prep!(%Rec{error_message: "dammit"})
+    end
+  end
+
+  describe "Anal.exam a valid Rec" do
+    test "SpecError if the spec isn't prepped" do
+      unprepped = %Rec{}
+
+      assert_raise(
+        SpecError,
+        "you must call Anal.prep/1 on the spec before calling Anal.exam/2",
+        fn ->
+          Anal.exam(unprepped, true)
+        end
+      )
+    end
+
+    test "allows nil iff nil_ok?" do
+      nil_ok_spec = Anal.prep!(%Rec{nil_ok?: true})
+      nil_not_ok_spec = Anal.prep!(%Rec{error_message: "dammit"})
+
+      :ok = Anal.exam(nil_ok_spec, nil)
+      {:error, "dammit"} = Anal.exam(nil_not_ok_spec, nil)
+    end
+
+    test "error if not a map" do
+      spec = Anal.prep!(%Rec{error_message: "dammit"})
+
+      [
+        true,
+        1,
+        "foo",
+        [],
+        {}
+      ]
+      |> Enum.each(fn val ->
+        assert {:error, "dammit"} = Anal.exam(spec, val)
+      end)
+
+      assert :ok = Anal.exam(spec, %{})
+    end
+
+    test "with required fields" do
+      required = %{"rs" => %Anal.Str{}, "rb" => %Anal.Boo{}}
+
+      spec = Anal.prep!(%Rec{required: required, error_message: "dammit"})
+
+      :ok = Anal.exam(spec, %{"rs" => "foo", "rb" => true})
+      {:error, "dammit"} = Anal.exam(spec, %{"rs" => "foo"})
+    end
+
+    test "with optional fields" do
+      # required = %{"rs" => %Anal.Str{}, "rb" => %Anal.Boo{}}
+      optional = %{"os" => %Anal.Str{}, "ob" => %Anal.Boo{}}
+
+      spec = Anal.prep!(%Rec{optional: optional, error_message: "dammit"})
+
+      :ok = Anal.exam(spec, %{"rs" => "foo", "rb" => true})
+      :ok = Anal.exam(spec, %{"rb" => true})
+      :ok = Anal.exam(spec, %{})
+    end
+
+    test "with exclusive?" do
+      required = %{"r" => %Anal.Str{}}
+      optional = %{"o" => %Anal.Str{}}
+
+      spec = Anal.prep!(%Rec{required: required, optional: optional, error_message: "dammit"})
+      exclusive_spec = Map.put(spec, :exclusive?, true)
+
+      :ok = Anal.exam(spec, %{"r" => "foo", "other" => "thing"})
+      :ok = Anal.exam(spec, %{"r" => "foo", "o" => true, "other" => "thing"})
+
+      {:error, "dammit"} = Anal.exam(exclusive_spec, %{"r" => "foo", "other" => "thing"})
+
+      {:error, "dammit"} =
+        Anal.exam(exclusive_spec, %{"r" => "foo", "o" => true, "other" => "thing"})
+    end
   end
 end
 

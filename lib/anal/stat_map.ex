@@ -58,7 +58,41 @@ defmodule Anal.Rec do
       |> check_for_shared_keys!()
     end
 
-    defp local_exam(%Spec{}, _val), do: :ok
+    defp local_exam(%Spec{}, val) when not is_map(val), do: :error
+
+    defp local_exam(%Spec{} = spec, %{}) when spec.required == %{} and spec.optional == %{},
+      do: :ok
+
+    defp local_exam(%Spec{} = spec, val = %{}) do
+      with :ok <- check_missing_required_fields(spec.required, val),
+           :ok <- check_for_exclusive_violation(spec, val) do
+        :ok
+      end
+    end
+
+    defp check_missing_required_fields(%{} = required , %{} = val) do
+      expected = required |> Map.keys() |> MapSet.new()
+
+      actual = val |> Map.keys() |> MapSet.new()
+
+
+      if MapSet.difference(expected, actual) |> MapSet.size() > 0, do: :error, else: :ok
+    end
+
+    defp check_for_exclusive_violation(%Spec{exclusive?: false}, %{} = _val), do: :ok
+
+    defp check_for_exclusive_violation(%Spec{exclusive?: true} = spec, %{} = val) do
+      required = spec.required |> Map.keys() |> MapSet.new()
+
+      optional = spec.optional |> Map.keys() |> MapSet.new()
+
+      allowed = MapSet.intersection(required, optional)
+
+      actual = val |> Map.keys() |> MapSet.new()
+
+
+      if MapSet.difference(actual, allowed) |> MapSet.size() > 0, do: :error, else: :ok
+    end
 
     defp prep_spec_map!(%{} = spec_map, field_name) do
       Map.new(spec_map, fn {key, val} ->
@@ -88,6 +122,10 @@ defmodule Anal.Rec do
     end
 
     def is_spec?(val), do: Anal.impl_for(val) != nil
+
+    def add_error_message(%Spec{error_message: error_message} = spec)
+        when is_binary(error_message),
+        do: spec
 
     def add_error_message(%Spec{exclusive?: false} = spec)
         when spec.required == %{} and spec.optional == %{} do
