@@ -17,17 +17,143 @@ defmodule Anal.RecTest do
       end)
     end
 
-    test ":exclusive is true but no fields defined" do
-      assert_raise(SpecError, ":required and/or :optional must be used if :exclusive is true", fn ->
-        Anal.prep!(%Rec{exclusive: true})
+    test ":exclusive? is not a boolean" do
+      assert_raise(
+        SpecError,
+        ":exclusive? must be a boolean",
+        fn ->
+          Anal.prep!(%Rec{exclusive?: "barf"})
+        end
+      )
+    end
+
+    test ":exclusive? is true but no fields defined" do
+      assert_raise(
+        SpecError,
+        ":required and/or :optional must be used if :exclusive? is true",
+        fn ->
+          Anal.prep!(%Rec{exclusive?: true})
+        end
+      )
+    end
+
+    @tag :this
+    test ":optional or :required is not a spec map" do
+      [
+        "goo",
+        [],
+        [key: "word"],
+        9,
+        nil,
+        %{atom_key: %Anal.Str{}},
+        %{"good" => "bad"},
+        %{"good" => %{can_be_nil: true}}
+      ]
+      |> Enum.each(fn bad_val ->
+        assert_raise(
+          SpecError,
+          ":optional must be a Map with string keys and Anal protocol-implementing values",
+          fn -> Anal.prep!(%Rec{optional: bad_val}) end
+        )
+
+        assert_raise(
+          SpecError,
+          ":required must be a Map with string keys and Anal protocol-implementing values",
+          fn -> Anal.prep!(%Rec{required: bad_val}) end
+        )
       end)
     end
 
+    test ":required and :optional field have the same key" do
+      str_spec = %Anal.Str{}
+      common = %{"a" => str_spec, "b" => str_spec}
+      optional = Map.put(common, "c", str_spec)
+      required = Map.put(common, "d", str_spec)
 
+      assert_raise(
+        SpecError,
+        "the following keys were in both :optional and :required -- a, b",
+        fn ->
+          Anal.prep!(%Rec{optional: optional, required: required})
+        end
+      )
+    end
 
-    #   assert_raise(SpecError, "cannot use both :one_of_ci and :max_length", fn ->
-    #     Anal.prep!(%Str{max_length: 5, one_of_ci: ["fool", "bart"]})
-    #   end)
+    test ":optional or :required contains an invalid spec" do
+      bad = %{"my_str" => %Anal.Str{min_length: -1}}
+
+      assert_raise(
+        SpecError,
+        ":min_length must be a positive integer",
+        fn ->
+          Anal.prep!(%Rec{optional: bad})
+        end
+      )
+
+      assert_raise(
+        SpecError,
+        ":min_length must be a positive integer",
+        fn ->
+          Anal.prep!(%Rec{required: bad})
+        end
+      )
+    end
+  end
+
+  describe "Anal.prep!/1 a valid Rec" do
+    test "adds a default error message" do
+      assert %Rec{error_message: "must be a map"} = Anal.prep!(%Rec{})
+
+      required = %{"r1" => %Anal.Str{}, "r2" => %Anal.Boo{}}
+      optional = %{"o1" => %Anal.Str{}, "o2" => %Anal.Boo{}}
+
+      assert %Rec{error_message: "must be a record with the required keys \"r1\", \"r2\""} =
+               Anal.prep!(%Rec{required: required})
+
+      assert %Rec{error_message: "must be a record with only the required keys \"r1\", \"r2\""} =
+               Anal.prep!(%Rec{required: required, exclusive?: true})
+
+      assert %Rec{error_message: "must be a record with the optional keys \"o1\", \"o2\""} =
+               Anal.prep!(%Rec{optional: optional})
+
+      assert %Rec{error_message: "must be a record with only the optional keys \"o1\", \"o2\""} =
+               Anal.prep!(%Rec{optional: optional, exclusive?: true})
+
+      assert %Rec{
+               error_message:
+                 "must be a record with the required keys \"r1\", \"r2\" and the optional keys \"o1\", \"o2\""
+             } = Anal.prep!(%Rec{optional: optional, required: required})
+
+      assert %Rec{
+               error_message:
+                 "must be a record with only the required keys \"r1\", \"r2\" and the optional keys \"o1\", \"o2\""
+             } = Anal.prep!(%Rec{optional: optional, required: required, exclusive?: true})
+
+      # assert %Str{
+      #          error_message:
+      #            "must be one of these strings (with matching case): |"Simon|", \"Garfunkel\""
+      #        } = Anal.prep!(%Str{one_of: ["Simon", "Garfunkel"]})
+
+      # assert %Str{
+      #          error_message:
+      #            "must be one of these strings (case doesn't have to match): \"simon\", \"garfunkel\""
+      #        } = Anal.prep!(%Str{one_of_ci: ["Simon", "Garfunkel"]})
+
+      # assert %Str{error_message: "must be a string matching the regex ~r/^\\d+$/"} =
+      #          Anal.prep!(%Str{regex: ~r/^\d+$/})
+
+      # assert %Str{error_message: "must be a string with at least 5 characters"} =
+      #          Anal.prep!(%Str{min_length: 5})
+
+      # assert %Str{error_message: "must be a string with at most 10 characters"} =
+      #          Anal.prep!(%Str{max_length: 10})
+
+      # assert %Str{error_message: "must be a string with at least 5 and at most 10 characters"} =
+      #          Anal.prep!(%Str{min_length: 5, max_length: 10})
+    end
+
+    # test "accepts an error message" do
+    #   assert %Str{error_message: "dammit"} = Anal.prep!(%Str{error_message: "dammit"})
     # end
   end
 end
@@ -47,7 +173,7 @@ end
 #                can_be_nil: false,
 #                required: %{},
 #                optional: %{},
-#                exclusive: false,
+#                exclusive?: false,
 #                also: nil
 #              }
 
@@ -88,9 +214,9 @@ end
 #                   [:my_bool] => "must be a boolean"
 #                 }}
 
-#       exclusive_spec = Map.put(spec, :exclusive, true)
+#       exclusive?_spec = Map.put(spec, :exclusive?, true)
 
-#       assert Spec.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, exclusive_spec) ==
+#       assert Spec.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, exclusive?_spec) ==
 #                {:error, %{[:some_other_field] => "is not allowed"}}
 
 #       empty_map_spec = StatMap.new()
@@ -101,7 +227,7 @@ end
 
 #       assert Spec.validate(
 #                %{some_other_field: [1, 2, 3]},
-#                Map.put(empty_map_spec, :exclusive, true)
+#                Map.put(empty_map_spec, :exclusive?, true)
 #              ) ==
 #                {:error, %{[:some_other_field] => "is not allowed"}}
 #     end
@@ -122,7 +248,7 @@ end
 
 #       # exclucivity applies to nested specs
 #       # TODO: allow explicit overwrite in child spec 
-#       exclusive_spec = Map.put(spec, :exclusive, true)
+#       exclusive?_spec = Map.put(spec, :exclusive?, true)
 
 #       map = %{nested: %{my_str: 1, my_bool: 1}, some_other_field: "foo"}
 
@@ -135,7 +261,7 @@ end
 #            [:nested, :my_bool] => "must be a boolean"
 #          }}
 
-#       assert Spec.validate(map, exclusive_spec) == expected
+#       assert Spec.validate(map, exclusive?_spec) == expected
 #     end
 #   end
 # end
