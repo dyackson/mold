@@ -34,6 +34,7 @@ defmodule Anal.Rec do
       else
         :ok -> :ok
         :error -> {:error, spec.error_message}
+        {:error, %{} = _nested_error_map} = it -> it
       end
     end
 
@@ -63,35 +64,78 @@ defmodule Anal.Rec do
     defp local_exam(%Spec{} = spec, %{}) when spec.required == %{} and spec.optional == %{},
       do: :ok
 
-    defp local_exam(%Spec{} = spec, val = %{}) do
-      with :ok <- check_missing_required_fields(spec.required, val),
-           :ok <- check_for_exclusive_violation(spec, val) do
-        :ok
-      end
+    defp local_exam(%Spec{} = spec, rec = %{}) do
+      required = spec.required |> Map.keys() |> MapSet.new()
+      actual = rec |> Map.keys() |> MapSet.new()
+
+      missing = MapSet.difference(required, actual) |> Map.new(&{&1, "is required"})
+
+      not_allowed =
+        if spec.exclusive? do
+          optional = spec.optional |> Map.keys() |> MapSet.new()
+          allowed = MapSet.intersection(required, optional)
+          MapSet.difference(actual, allowed) |> Map.new(&{&1, "is not allowed"})
+        else
+          %{}
+        end
+
+      errors_so_far = Map.merge(missing, not_allowed)
+
+      errors_by_field =
+        Enum.reduce(rec, errors_so_far, fn {key, val}, acc ->
+          spec = Map.get(spec.required, key) || Map.get(spec.optional, key)
+          missing? = Map.has_key?(missing, key)
+
+          # recurse if the field is spec'd and present
+          result = if spec == nil or missing?, do: :ok, else: Anal.exam(spec, val)
+
+          case result do
+            :ok ->
+              acc
+
+            {:error, error} when is_binary(error) or is_map(error) ->
+              Map.put(acc, key, error)
+          end
+        end)
+
+      if errors_by_field == %{}, do: :ok, else: {:error, errors_by_field}
     end
 
-    defp check_missing_required_fields(%{} = required , %{} = val) do
-      expected = required |> Map.keys() |> MapSet.new()
+    # at this point, we know the required fields are present
+    # and that there are no exclusive violations
+    defp get_nested_error_map(%Spec{} = spec, rec = %{}) do
+      field_specs_by_key = Map.merge(spec.required, spec.optional)
 
+      Enum.reduce(rec, %{}, fn {key, val}, acc ->
+        spec = Map.get(field_specs_by_key, key)
+
+        # recurse if the field is spec'd
+        result = if spec == nil, do: :ok, else: Anal.exam(spec, val)
+        IO.inspect(result)
+
+        case result do
+          :ok -> acc
+          {:error, errors} when is_binary(errors) or is_map(errors) -> Map.put(acc, key, errors)
+        end
+      end)
+    end
+
+    defp check_missing_required_fields(%{} = required, %{} = val) do
+      expected = required |> Map.keys() |> MapSet.new()
       actual = val |> Map.keys() |> MapSet.new()
 
-
-      if MapSet.difference(expected, actual) |> MapSet.size() > 0, do: :error, else: :ok
+      MapSet.difference(expected, actual) |> Map.new(&{&1, "is required"})
     end
 
     defp check_for_exclusive_violation(%Spec{exclusive?: false}, %{} = _val), do: :ok
 
     defp check_for_exclusive_violation(%Spec{exclusive?: true} = spec, %{} = val) do
       required = spec.required |> Map.keys() |> MapSet.new()
-
       optional = spec.optional |> Map.keys() |> MapSet.new()
-
       allowed = MapSet.intersection(required, optional)
-
       actual = val |> Map.keys() |> MapSet.new()
 
-
-      if MapSet.difference(actual, allowed) |> MapSet.size() > 0, do: :error, else: :ok
+      MapSet.difference(actual, allowed) |> Map.new(&{&1, "is not allowed"})
     end
 
     defp prep_spec_map!(%{} = spec_map, field_name) do
@@ -129,7 +173,7 @@ defmodule Anal.Rec do
 
     def add_error_message(%Spec{exclusive?: false} = spec)
         when spec.required == %{} and spec.optional == %{} do
-      Map.put(spec, :error_message, "must be a map")
+      Map.put(spec, :error_message, "must be a record")
     end
 
     def add_error_message(%Spec{} = spec) when spec.required == %{} and spec.optional != %{} do

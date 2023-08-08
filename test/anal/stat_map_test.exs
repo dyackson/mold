@@ -100,8 +100,9 @@ defmodule Anal.RecTest do
   end
 
   describe "Anal.prep!/1 a valid Rec" do
+    @tag :it
     test "adds a default error message" do
-      assert %Rec{error_message: "must be a map"} = Anal.prep!(%Rec{})
+      assert %Rec{error_message: "must be a record"} = Anal.prep!(%Rec{})
 
       required = %{"r1" => %Anal.Str{}, "r2" => %Anal.Boo{}}
       optional = %{"o1" => %Anal.Str{}, "o2" => %Anal.Boo{}}
@@ -175,10 +176,10 @@ defmodule Anal.RecTest do
     test "with required fields" do
       required = %{"rs" => %Anal.Str{}, "rb" => %Anal.Boo{}}
 
-      spec = Anal.prep!(%Rec{required: required, error_message: "dammit"})
+      spec = Anal.prep!(%Rec{required: required})
 
       :ok = Anal.exam(spec, %{"rs" => "foo", "rb" => true})
-      {:error, "dammit"} = Anal.exam(spec, %{"rs" => "foo"})
+      {:error, %{"rb" => "is required"}} = Anal.exam(spec, %{"rs" => "foo"})
     end
 
     test "with optional fields" do
@@ -199,121 +200,108 @@ defmodule Anal.RecTest do
       spec = Anal.prep!(%Rec{required: required, optional: optional, error_message: "dammit"})
       exclusive_spec = Map.put(spec, :exclusive?, true)
 
-      :ok = Anal.exam(spec, %{"r" => "foo", "other" => "thing"})
-      :ok = Anal.exam(spec, %{"r" => "foo", "o" => true, "other" => "thing"})
+      assert :ok = Anal.exam(spec, %{"r" => "foo", "other" => "thing"})
+      assert :ok = Anal.exam(spec, %{"r" => "foo", "o" => "foo", "other" => "thing"})
 
-      {:error, "dammit"} = Anal.exam(exclusive_spec, %{"r" => "foo", "other" => "thing"})
+      assert {:error, %{"other" => "is not allowed"}} =
+               Anal.exam(exclusive_spec, %{"r" => "foo", "other" => "thing"})
 
-      {:error, "dammit"} =
-        Anal.exam(exclusive_spec, %{"r" => "foo", "o" => true, "other" => "thing"})
+      assert {:error, %{"other" => "is not allowed"}} =
+               Anal.exam(exclusive_spec, %{"r" => "foo", "o" => "foo", "other" => "thing"})
+    end
+
+    test "detects nested errors" do
+      required = %{"r" => %Anal.Str{error_message: "bad r"}}
+      optional = %{"o" => %Anal.Str{error_message: "bad o"}}
+
+      spec = Anal.prep!(%Rec{required: required, optional: optional})
+
+      assert :ok = Anal.exam(spec, %{"r" => "foo", "other" => "thing"})
+      assert :ok = Anal.exam(spec, %{"r" => "foo", "o" => "foo", "other" => "thing"})
+
+      assert {:error, %{"r" => "bad r"}} = Anal.exam(spec, %{"r" => 1, "other" => 1})
+
+      assert {:error, %{"o" => "bad o"}} =
+               Anal.exam(spec, %{"r" => "foo", "o" => 1, "other" => 1})
+
+      assert {:error, %{"r" => "bad r", "o" => "bad o"}} =
+               Anal.exam(spec, %{"r" => 1, "o" => 1, "other" => 1})
+    end
+
+    test "detects deeply nested errors" do
+      required = %{"r" => %Anal.Str{error_message: "bad r str"}}
+      optional = %{"o" => %Anal.Str{error_message: "bad o str"}}
+
+      nested_rec_spec = %Rec{
+        required: required,
+        optional: optional
+      }
+
+      spec =
+        Anal.prep!(%Rec{
+          required: %{"r" => Map.put(nested_rec_spec, :error_message, "bad r rec")},
+          optional: %{"o" => Map.put(nested_rec_spec, :error_message, "bad o rec")}
+        })
+
+      assert :ok =
+               Anal.exam(spec, %{
+                 "r" => %{"r" => "foo", "o" => "foo", "x" => "?"},
+                 "o" => %{"r" => "foo", "o" => "foo", "x" => "?"},
+                 "x" => "?"
+               })
+
+      assert :ok =
+               Anal.exam(spec, %{
+                 "r" => %{"r" => "foo"},
+                 "o" => %{"r" => "foo", "o" => "foo", "x" => "?"},
+                 "x" => "?"
+               })
+
+      assert :ok = Anal.exam(spec, %{"r" => %{"r" => "foo"}})
+
+      assert {:error, errors} =
+               Anal.exam(spec, %{
+                 "r" => %{"r" => 1, "o" => 1, "x" => "?"},
+                 "o" => %{"o" => 1, "x" => "?"},
+                 "x" => "?"
+               })
+
+      assert errors == %{
+               "r" => %{"r" => "bad r str", "o" => "bad o str"},
+               "o" => %{
+                 "r" => "is required",
+                 "o" => "bad o str"
+               }
+             }
+
+      assert {:error, errors} = Anal.exam(spec, %{"o" => %{"o" => 1, "x" => "?"}, "x" => "?"})
+
+      assert errors == %{
+               "r" => "is required",
+               "o" => %{
+                 "r" => "is required",
+                 "o" => "bad o str"
+               }
+             }
+
+      assert {:error, errors} =
+               Anal.exam(spec, %{"r" => 1, "o" => %{"o" => 1, "x" => "?"}, "x" => "?"})
+
+      assert errors == %{
+               "r" => "bad r rec",
+               "o" => %{
+                 "r" => "is required",
+                 "o" => "bad o str"
+               }
+             }
+
+      assert {:error, %{"r" => "bad r rec"}} = Anal.exam(spec, %{"r" => 1, "other" => 1})
+
+      assert {:error, %{"o" => "bad o rec"}} =
+               Anal.exam(spec, %{"r" => "foo", "o" => 1, "other" => 1})
+
+      assert {:error, %{"r" => "bad r rec", "o" => "bad o rec"}} =
+               Anal.exam(spec, %{"r" => 1, "o" => 1, "other" => 1})
     end
   end
 end
-
-# defmodule Anal.StatMapTest do
-#   alias Anal.Spec
-#   alias Anal.StatMap
-#   alias Anal.Str
-#   alias Anal.Int
-#   alias Anal.BoolSpec
-
-#   use ExUnit.Case
-
-#   describe "StatMap.new/1" do
-#     test "creates a map spec" do
-#       assert StatMap.new() == %StatMap{
-#                can_be_nil: false,
-#                required: %{},
-#                optional: %{},
-#                exclusive?: false,
-#                also: nil
-#              }
-
-#       assert StatMap.new(can_be_nil: true) == %StatMap{can_be_nil: true}
-#     end
-
-#     test "validate with a map Spec" do
-#       spec =
-#         StatMap.new(
-#           required: [my_str: Str.new(), my_int: Int.new()],
-#           optional: %{my_bool: BoolSpec.new(can_be_nil: true)}
-#         )
-
-#       assert :ok = Spec.validate(%{my_str: "foo", my_int: 1}, spec)
-#       assert :ok = Spec.validate(%{my_str: "foo", my_int: 1, my_bool: true}, spec)
-#       assert :ok = Spec.validate(%{my_str: "foo", my_int: 1, my_bool: nil}, spec)
-#       assert :ok = Spec.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, spec)
-
-#       assert Spec.validate(%{my_str: "foo"}, spec) == {:error, %{[:my_int] => "is required"}}
-
-#       assert Spec.validate(%{}, spec) ==
-#                {:error, %{[:my_int] => "is required", [:my_str] => "is required"}}
-
-#       assert Spec.validate(%{my_str: "foo", my_int: "foo"}, spec) ==
-#                {:error, %{[:my_int] => "must be an integer"}}
-
-#       assert Spec.validate(%{my_str: 1, my_int: "foo"}, spec) ==
-#                {:error, %{[:my_int] => "must be an integer", [:my_str] => "must be a string"}}
-
-#       assert Spec.validate(%{my_str: 1, my_int: "foo"}, spec) ==
-#                {:error, %{[:my_int] => "must be an integer", [:my_str] => "must be a string"}}
-
-#       assert Spec.validate(%{my_str: 1, my_int: "foo", my_bool: "foo"}, spec) ==
-#                {:error,
-#                 %{
-#                   [:my_int] => "must be an integer",
-#                   [:my_str] => "must be a string",
-#                   [:my_bool] => "must be a boolean"
-#                 }}
-
-#       exclusive?_spec = Map.put(spec, :exclusive?, true)
-
-#       assert Spec.validate(%{my_str: "foo", my_int: 1, some_other_field: "foopy"}, exclusive?_spec) ==
-#                {:error, %{[:some_other_field] => "is not allowed"}}
-
-#       empty_map_spec = StatMap.new()
-
-#       assert :ok = Spec.validate(%{}, empty_map_spec)
-#       assert :ok = Spec.validate(%{some_other_field: [1, 2, 3]}, empty_map_spec)
-#       assert {:error, "cannot be nil"} = Spec.validate(nil, empty_map_spec)
-
-#       assert Spec.validate(
-#                %{some_other_field: [1, 2, 3]},
-#                Map.put(empty_map_spec, :exclusive?, true)
-#              ) ==
-#                {:error, %{[:some_other_field] => "is not allowed"}}
-#     end
-
-#     test "validate a nested map spec" do
-#       nested_spec =
-#         StatMap.new(
-#           required: %{my_str: Str.new(), my_int: Int.new()},
-#           optional: [my_bool: BoolSpec.new(can_be_nil: true)]
-#         )
-
-#       spec = StatMap.new(required: [nested: nested_spec])
-
-#       :ok = Spec.validate(%{nested: %{my_int: 1, my_str: "foo"}}, spec)
-
-#       assert Spec.validate(%{nested: %{my_str: "foo"}}, spec) ==
-#                {:error, %{[:nested, :my_int] => "is required"}}
-
-#       # exclucivity applies to nested specs
-#       # TODO: allow explicit overwrite in child spec 
-#       exclusive?_spec = Map.put(spec, :exclusive?, true)
-
-#       map = %{nested: %{my_str: 1, my_bool: 1}, some_other_field: "foo"}
-
-#       expected =
-#         {:error,
-#          %{
-#            [:some_other_field] => "is not allowed",
-#            [:nested, :my_str] => "must be a string",
-#            [:nested, :my_int] => "is required",
-#            [:nested, :my_bool] => "must be a boolean"
-#          }}
-
-#       assert Spec.validate(map, exclusive?_spec) == expected
-#     end
-#   end
-# end
