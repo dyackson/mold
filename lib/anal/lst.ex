@@ -1,68 +1,116 @@
 # defmodule Anal.Lst do
-#   use Anal.Spec,
-#     fields: [:min_len, :max_len, of: :required]
-# end
+defmodule Anal.Lst do
+  alias Anal.Common
+  alias Anal.SpecError
+  alias __MODULE__, as: Spec
 
-# defimpl Anal.SpecProtocol, for: Anal.Lst do
-#   def validate_spec(%{min_len: min_len})
-#       when not is_nil(min_len) and not (is_integer(min_len) and min_len >= 0),
-#       do: {:error, ":min_len must be a non-negative integer"}
+  defstruct [
+    :also,
+    :error_message,
+    :of,
+    :min_length,
+    :max_length,
+    nil_ok?: false,
+    __prepped__: false
+  ]
 
-#   def validate_spec(%{max_len: max_len})
-#       when not is_nil(max_len) and not (is_integer(max_len) and max_len >= 0),
-#       do: {:error, ":max_len must be a non-negative integer"}
+  defimpl Anal do
+    def prep!(%Spec{} = spec) do
+      spec
+      |> Common.prep!()
+      |> local_prep!()
+      |> Map.put(:__prepped__, true)
+    end
 
-#   def validate_spec(%{min_len: min_len, max_len: max_len})
-#       when is_integer(min_len) and is_integer(max_len) and min_len > max_len,
-#       do: {:error, ":min_len cannot be greater than :max_len"}
+    def exam(%Spec{} = spec, val) do
+      spec = Common.check_prepped!(spec)
 
-#   def validate_spec(%{of: of}) do
-#     if Anal.Spec.is_spec?(of),
-#       do: :ok,
-#       else: {:error, ":of must be a spec"}
-#   end
+      case {spec.nil_ok?, val} do
+        {true, nil} ->
+          :ok
 
-#   def validate_spec(_spec), do: :ok
+        {false, nil} ->
+          {:error, spec.error_message}
 
-#   def validate_val(%{} = _spec, val) when not is_list(val), do: {:error, "must be a list"}
+        _ ->
+          # check the non-nil value with the spec
+          with :ok <- local_exam(spec, val),
+               :ok <- Common.apply_also(spec, val) do
+            :ok
+          else
+            :error -> {:error, spec.error_message}
+            {:error, %{} = _nested_error_map} = it -> it
+          end
+      end
+    end
 
-#   def validate_val(%{of: item_spec, min_len: min_len, max_len: max_len} = _spec, list) do
-#     with :ok <- validate_min_len(list, min_len),
-#          :ok <- validate_max_len(list, max_len) do
-#       item_errors =
-#         list
-#         |> Enum.with_index()
-#         |> Enum.map(fn {item, index} ->
-#           Anal.Spec.recurse(index, item, item_spec)
-#         end)
-#         |> Enum.filter(&(&1 != :ok))
-#         |> Map.new()
+    defp local_prep!(%Spec{} = spec) do
+      length_error_msg =
+        case spec do
+          %{min_length: l} when not (is_nil(l) or (is_integer(l) and l >= 0)) ->
+            ":min_length must be a non-negative integer"
 
-#       if item_errors == %{} do
-#         :ok
-#       else
-#         {:error, item_errors}
-#       end
-#     end
-#   end
+          %{max_length: l} when not (is_nil(l) or (is_integer(l) and l > 0)) ->
+            ":max_length must be a positive integer"
 
-#   defp validate_min_len(_list, nil), do: :ok
+          %{min_length: min, max_length: max}
+          when is_integer(min) and is_integer(max) and min > max ->
+            ":min_length must be less than or equal to :max_length"
 
-#   defp validate_min_len(list, min) do
-#     if length(list) < min do
-#       {:error, "length must be at least #{min}"}
-#     else
-#       :ok
-#     end
-#   end
+          _ ->
+            nil
+        end
 
-#   defp validate_max_len(_list, nil), do: :ok
+      if is_binary(length_error_msg), do: raise(SpecError.new(length_error_msg))
 
-#   defp validate_max_len(list, max) do
-#     if length(list) > max do
-#       {:error, "length cannot exceed #{max}"}
-#     else
-#       :ok
-#     end
-#   end
-# end
+      if not is_spec?(spec.of),
+        do: raise(SpecError.new(":of is required and must implement the Anal protocol"))
+
+      spec = Map.put(spec, :of, Anal.prep!(spec.of))
+      # add the error message to the spec
+      if is_binary(spec.error_message) do
+        # user-supplied error message exists, use it, nothing to do
+        spec
+      else
+        error_message =
+          case {spec.min_length, spec.max_length} do
+            {nil, nil} -> "must be a list"
+            {min, nil} -> "must be a list with at least #{min} elements"
+            {nil, max} -> "must be a list with at most #{max} elements"
+            {min, max} -> "must be a list with at least #{min} and at most #{max} elements"
+          end
+
+        Map.put(spec, :error_message, error_message)
+      end
+    end
+
+    defp local_exam(%Spec{}, val) when not is_list(val), do: :error
+
+    defp local_exam(%Spec{min_length: min_length, max_length: max_length} = spec, val) do
+      length = if is_integer(min_length) or is_integer(max_length), do: length(val)
+
+      cond do
+        is_integer(min_length) && length < min_length ->
+          :error
+
+        is_integer(max_length) && length > max_length ->
+          :error
+
+        true ->
+          item_errors_map =
+            val
+            |> Enum.with_index()
+            |> Enum.reduce(%{}, fn {item, index}, acc ->
+              case Anal.exam(spec.of, item) do
+                :ok -> acc
+                {:error, e} when is_binary(e) or is_map(e) -> Map.put(acc, index, e)
+              end
+            end)
+
+          if item_errors_map == %{}, do: :ok, else: {:error, item_errors_map}
+      end
+    end
+
+    def is_spec?(val), do: Anal.impl_for(val) != nil
+  end
+end
