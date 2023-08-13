@@ -74,10 +74,20 @@ defmodule Anal.Lst do
       else
         error_message =
           case {spec.min_length, spec.max_length} do
-            {nil, nil} -> "must be a list"
-            {min, nil} -> "must be a list with at least #{min} elements"
-            {nil, max} -> "must be a list with at most #{max} elements"
-            {min, max} -> "must be a list with at least #{min} and at most #{max} elements"
+            {nil, nil} ->
+              "must be a list in which each element " <> spec.of.error_message
+
+            {min, nil} ->
+              "must be a list with at least #{min} elements, each of which " <>
+                spec.of.error_message
+
+            {nil, max} ->
+              "must be a list with at most #{max} elements, each of which " <>
+                spec.of.error_message
+
+            {min, max} ->
+              "must be a list with at least #{min} and at most #{max} elements, each of which " <>
+                spec.of.error_message
           end
 
         Map.put(spec, :error_message, error_message)

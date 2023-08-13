@@ -53,16 +53,23 @@ defmodule Anal.LstTest do
 
   describe "Anal.prep!/1 a valid Lst" do
     test "adds a default error message" do
-      assert %Lst{error_message: "must be a list"} = Anal.prep!(%Lst{of: %Str{}})
+      assert %Lst{error_message: "must be a list in which each element must be a string"} =
+               Anal.prep!(%Lst{of: %Str{}})
 
-      assert %Lst{error_message: "must be a list with at least 5 elements"} =
-               Anal.prep!(%Lst{of: %Str{}, min_length: 5})
+      assert %Lst{
+               error_message:
+                 "must be a list with at least 5 elements, each of which must be a string"
+             } = Anal.prep!(%Lst{of: %Str{}, min_length: 5})
 
-      assert %Lst{error_message: "must be a list with at most 5 elements"} =
-               Anal.prep!(%Lst{of: %Str{}, max_length: 5})
+      assert %Lst{
+               error_message:
+                 "must be a list with at most 5 elements, each of which must be a string"
+             } = Anal.prep!(%Lst{of: %Str{}, max_length: 5})
 
-      assert %Lst{error_message: "must be a list with at least 1 and at most 5 elements"} =
-               Anal.prep!(%Lst{of: %Str{}, min_length: 1, max_length: 5})
+      assert %Lst{
+               error_message:
+                 "must be a list with at least 1 and at most 5 elements, each of which must be a string"
+             } = Anal.prep!(%Lst{of: %Str{}, min_length: 1, max_length: 5})
     end
 
     test "accepts an error message" do
