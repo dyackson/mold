@@ -98,29 +98,43 @@ defmodule Anal.Dic do
          when is_integer(spec.min_size) and map_size(val) < spec.min_size,
          do: :error
 
-    defp local_exam(%Spec{} = spec, val) do
-      # if a keys is bad, use the default error message because there isn't a good way to
-      # indicate that the key is the problem.
-      # if the value is bad, return a map with the key pointing at the error message for the value.
-      errors =
-        Enum.reduce_while(val, %{}, fn {key, val}, acc ->
-          case Anal.exam(spec.keys, key) do
-            {:error, _msg} ->
-              {:halt, :bad_key}
+    defp local_exam(%Spec{} = spec, val)
+         when is_integer(spec.max_size) and map_size(val) > spec.max_size,
+         do: :error
 
-            :ok ->
-              case Anal.exam(spec.vals, val) do
-                {:error, error} -> {:cont, Map.put(acc, key, error)}
-                :ok -> {:cont, acc}
+    defp local_exam(%Spec{} = spec, val) do
+      {nested_errors, bad_keys} =
+        Enum.reduce(val, {%{}, []}, fn
+          {key, val}, {nested_errors, bad_keys} = _acc ->
+            bad_keys =
+              case Anal.exam(spec.keys, key) do
+                {:error, _msg} -> [key | bad_keys]
+                :ok -> bad_keys
               end
-          end
+
+            nested_errors =
+              case Anal.exam(spec.vals, val) do
+                {:error, error} -> Map.put(nested_errors, key, error)
+                :ok -> nested_errors
+              end
+
+            {nested_errors, bad_keys}
         end)
 
-      case errors do
-        :bad_key -> :error
-        map when map_size(map) > 0 -> :ok
-        map when is_map(map) -> {:error, map}
-      end
+      # use a special field for bad keys because putting them in the error map the normal way is ambiguous
+      error_map =
+        case bad_keys do
+          [_ | _] ->
+            Map.put(nested_errors, "__key_errors__", %{
+              keys: Enum.sort(bad_keys),
+              message: spec.keys.error_message
+            })
+
+          [] ->
+            nested_errors
+        end
+
+      if map_size(error_map) > 0, do: {:error, error_map}, else: :ok
     end
   end
 end
