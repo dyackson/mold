@@ -19,12 +19,12 @@ defmodule Mold.DecTest do
 
     test "given an invalid bound" do
       Enum.each([:lt, :lte, :gt, :gte], fn bound ->
-        spec = Map.put(%Dec{}, bound, "some shit")
+        mold = Map.put(%Dec{}, bound, "some shit")
 
         assert_raise(
           Error,
           "#{inspect(bound)} must be a Decimal, a decimal-formatted string, or an integer",
-          fn -> Mold.prep!(spec) end
+          fn -> Mold.prep!(mold) end
         )
       end)
     end
@@ -42,13 +42,13 @@ defmodule Mold.DecTest do
     test "lower bound is greater than upper bound" do
       for lower <- [:gt, :gte], upper <- [:lt, :lte] do
         assert_raise Error, "#{inspect(lower)} must be less than #{inspect(upper)}", fn ->
-          spec = Map.merge(%Dec{}, %{lower => 5, upper => 3})
-          Mold.prep!(spec)
+          mold = Map.merge(%Dec{}, %{lower => 5, upper => 3})
+          Mold.prep!(mold)
         end
 
         assert_raise Error, "#{inspect(lower)} must be less than #{inspect(upper)}", fn ->
-          spec = Map.merge(%Dec{}, %{lower => 5, upper => 5})
-          Mold.prep!(spec)
+          mold = Map.merge(%Dec{}, %{lower => 5, upper => 5})
+          Mold.prep!(mold)
         end
       end
     end
@@ -124,12 +124,12 @@ defmodule Mold.DecTest do
   end
 
   describe "Mold.exam using Dec" do
-    test "Error if the spec isn't prepped" do
+    test "Error if the mold isn't prepped" do
       unprepped = %Dec{}
 
       assert_raise(
         Error,
-        "you must call Mold.prep/1 on the spec before calling Mold.exam/2",
+        "you must call Mold.prep/1 on the mold before calling Mold.exam/2",
         fn ->
           Mold.exam(unprepped, true)
         end
@@ -137,85 +137,85 @@ defmodule Mold.DecTest do
     end
 
     test "allows nil iff nil_ok?" do
-      nil_ok_spec = Mold.prep!(%Dec{nil_ok?: true})
-      nil_not_ok_spec = Mold.prep!(%Dec{error_message: "dammit"})
+      nil_ok_mold = Mold.prep!(%Dec{nil_ok?: true})
+      nil_not_ok_mold = Mold.prep!(%Dec{error_message: "dammit"})
 
-      :ok = Mold.exam(nil_ok_spec, nil)
-      {:error, "dammit"} = Mold.exam(nil_not_ok_spec, nil)
+      :ok = Mold.exam(nil_ok_mold, nil)
+      {:error, "dammit"} = Mold.exam(nil_not_ok_mold, nil)
     end
 
     test "fail if not a decimal-formatted string" do
-      spec = Mold.prep!(%Dec{error_message: "dammit"})
+      mold = Mold.prep!(%Dec{error_message: "dammit"})
       # pass
       [".1", "1.1", "1", "0.1", "1.0", "-4", "-.4", "-0.4"]
-      |> Enum.each(&assert :ok = Mold.exam(spec, &1))
+      |> Enum.each(&assert :ok = Mold.exam(mold, &1))
 
       # fail
       [".1.11", "1.", "1.1.1", true, "bla", Decimal.new(1)]
-      |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
 
     test "takes an :also function" do
-      spec = Mold.prep!(%Dec{error_message: "dammit", also: &String.contains?(&1, "3")})
+      mold = Mold.prep!(%Dec{error_message: "dammit", also: &String.contains?(&1, "3")})
 
-      :ok = Mold.exam(spec, "2.30")
-      {:error, "dammit"} = Mold.exam(spec, "2.22")
+      :ok = Mold.exam(mold, "2.30")
+      {:error, "dammit"} = Mold.exam(mold, "2.22")
     end
 
     test "Error if :also doesn't return a boolean" do
-      spec = Mold.prep!(%Dec{error_message: "dammit", also: fn _ -> :some_shit end})
+      mold = Mold.prep!(%Dec{error_message: "dammit", also: fn _ -> :some_shit end})
 
       assert_raise(Error, ":also must return a boolean, but it returned :some_shit", fn ->
-        Mold.exam(spec, "1.1")
+        Mold.exam(mold, "1.1")
       end)
     end
 
     test "checks :max_decimal_places" do
-      spec = Mold.prep!(%Dec{max_decimal_places: 2, error_message: "dammit"})
+      mold = Mold.prep!(%Dec{max_decimal_places: 2, error_message: "dammit"})
       # pass
-      [".1", ".11", "1", "1.1", "1.11"] |> Enum.each(&assert :ok = Mold.exam(spec, &1))
+      [".1", ".11", "1", "1.1", "1.11"] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
       # fail
-      [".111", "1.111", "1.1111"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      [".111", "1.111", "1.1111"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
 
     test "checks :gt" do
-      spec = Mold.prep!(%Dec{gt: "2", error_message: "dammit"})
+      mold = Mold.prep!(%Dec{gt: "2", error_message: "dammit"})
       # pass
-      ["2.1", "3"] |> Enum.each(&assert :ok = Mold.exam(spec, &1))
+      ["2.1", "3"] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
       # fail
-      ["1", "2"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      ["1", "2"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
 
     test "checks :gte" do
-      spec = Mold.prep!(%Dec{gte: "2.5", error_message: "dammit"})
+      mold = Mold.prep!(%Dec{gte: "2.5", error_message: "dammit"})
       # pass
-      ["2.5", "2.50", "3"] |> Enum.each(&assert :ok = Mold.exam(spec, &1))
+      ["2.5", "2.50", "3"] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
       # fail
-      ["1", "2.49999999"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      ["1", "2.49999999"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
 
     test "checks :lt" do
-      spec = Mold.prep!(%Dec{lt: "2.5", error_message: "dammit"})
+      mold = Mold.prep!(%Dec{lt: "2.5", error_message: "dammit"})
       # pass
-      ["2.4999", "0"] |> Enum.each(&assert :ok = Mold.exam(spec, &1))
+      ["2.4999", "0"] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
       # fail
-      ["2.5", "3"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      ["2.5", "3"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
 
     test "checks :lte" do
-      spec = Mold.prep!(%Dec{lte: "2.5", error_message: "dammit"})
+      mold = Mold.prep!(%Dec{lte: "2.5", error_message: "dammit"})
       # pass
-      ["2.50", "0"] |> Enum.each(&assert :ok = Mold.exam(spec, &1))
+      ["2.50", "0"] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
       # fail
-      ["2.50000001", "3"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      ["2.50000001", "3"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
 
     test "checks both an upper and lower bound" do
-      spec = Mold.prep!(%Dec{gte: 5, lt: 10, error_message: "dammit"})
+      mold = Mold.prep!(%Dec{gte: 5, lt: 10, error_message: "dammit"})
       # pass
-      ["5", "7", "9.999"] |> Enum.each(&assert :ok = Mold.exam(spec, &1))
+      ["5", "7", "9.999"] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
       # fail
-      ["4", "4.99", "10", "10.01"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      ["4", "4.99", "10", "10.01"] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
   end
 end

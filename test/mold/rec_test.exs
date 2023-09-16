@@ -37,7 +37,7 @@ defmodule Mold.RecTest do
       )
     end
 
-    test ":optional or :required is not a spec map" do
+    test ":optional or :required is not a mold map" do
       [
         "goo",
         [],
@@ -64,10 +64,10 @@ defmodule Mold.RecTest do
     end
 
     test ":required and :optional field have the same key" do
-      str_spec = %Mold.Str{}
-      common = %{"a" => str_spec, "b" => str_spec}
-      optional = Map.put(common, "c", str_spec)
-      required = Map.put(common, "d", str_spec)
+      str_mold = %Mold.Str{}
+      common = %{"a" => str_mold, "b" => str_mold}
+      optional = Map.put(common, "c", str_mold)
+      required = Map.put(common, "d", str_mold)
 
       assert_raise(
         Error,
@@ -78,7 +78,7 @@ defmodule Mold.RecTest do
       )
     end
 
-    test ":optional or :required contains an invalid spec" do
+    test ":optional or :required contains an invalid mold" do
       bad = %{"my_str" => %Mold.Str{min_length: -1}}
 
       assert_raise(
@@ -136,12 +136,12 @@ defmodule Mold.RecTest do
   end
 
   describe "Mold.exam a valid Rec" do
-    test "Error if the spec isn't prepped" do
+    test "Error if the mold isn't prepped" do
       unprepped = %Rec{}
 
       assert_raise(
         Error,
-        "you must call Mold.prep/1 on the spec before calling Mold.exam/2",
+        "you must call Mold.prep/1 on the mold before calling Mold.exam/2",
         fn ->
           Mold.exam(unprepped, true)
         end
@@ -149,15 +149,15 @@ defmodule Mold.RecTest do
     end
 
     test "allows nil iff nil_ok?" do
-      nil_ok_spec = Mold.prep!(%Rec{nil_ok?: true})
-      nil_not_ok_spec = Mold.prep!(%Rec{error_message: "dammit"})
+      nil_ok_mold = Mold.prep!(%Rec{nil_ok?: true})
+      nil_not_ok_mold = Mold.prep!(%Rec{error_message: "dammit"})
 
-      :ok = Mold.exam(nil_ok_spec, nil)
-      {:error, "dammit"} = Mold.exam(nil_not_ok_spec, nil)
+      :ok = Mold.exam(nil_ok_mold, nil)
+      {:error, "dammit"} = Mold.exam(nil_not_ok_mold, nil)
     end
 
     test "error if not a map" do
-      spec = Mold.prep!(%Rec{error_message: "dammit"})
+      mold = Mold.prep!(%Rec{error_message: "dammit"})
 
       [
         true,
@@ -167,100 +167,100 @@ defmodule Mold.RecTest do
         {}
       ]
       |> Enum.each(fn val ->
-        assert {:error, "dammit"} = Mold.exam(spec, val)
+        assert {:error, "dammit"} = Mold.exam(mold, val)
       end)
 
-      assert :ok = Mold.exam(spec, %{})
+      assert :ok = Mold.exam(mold, %{})
     end
 
     test "with required fields" do
       required = %{"rs" => %Mold.Str{}, "rb" => %Mold.Boo{}}
 
-      spec = Mold.prep!(%Rec{required: required})
+      mold = Mold.prep!(%Rec{required: required})
 
-      :ok = Mold.exam(spec, %{"rs" => "foo", "rb" => true})
-      {:error, %{"rb" => "is required"}} = Mold.exam(spec, %{"rs" => "foo"})
+      :ok = Mold.exam(mold, %{"rs" => "foo", "rb" => true})
+      {:error, %{"rb" => "is required"}} = Mold.exam(mold, %{"rs" => "foo"})
     end
 
     test "with optional fields" do
       # required = %{"rs" => %Mold.Str{}, "rb" => %Mold.Boo{}}
       optional = %{"os" => %Mold.Str{}, "ob" => %Mold.Boo{}}
 
-      spec = Mold.prep!(%Rec{optional: optional, error_message: "dammit"})
+      mold = Mold.prep!(%Rec{optional: optional, error_message: "dammit"})
 
-      :ok = Mold.exam(spec, %{"rs" => "foo", "rb" => true})
-      :ok = Mold.exam(spec, %{"rb" => true})
-      :ok = Mold.exam(spec, %{})
+      :ok = Mold.exam(mold, %{"rs" => "foo", "rb" => true})
+      :ok = Mold.exam(mold, %{"rb" => true})
+      :ok = Mold.exam(mold, %{})
     end
 
     test "with exclusive?" do
       required = %{"r" => %Mold.Str{}}
       optional = %{"o" => %Mold.Str{}}
 
-      spec = Mold.prep!(%Rec{required: required, optional: optional, error_message: "dammit"})
-      exclusive_spec = Map.put(spec, :exclusive?, true)
+      mold = Mold.prep!(%Rec{required: required, optional: optional, error_message: "dammit"})
+      exclusive_mold = Map.put(mold, :exclusive?, true)
 
-      assert :ok = Mold.exam(spec, %{"r" => "foo", "other" => "thing"})
-      assert :ok = Mold.exam(spec, %{"r" => "foo", "o" => "foo", "other" => "thing"})
-
-      assert {:error, %{"other" => "is not allowed"}} =
-               Mold.exam(exclusive_spec, %{"r" => "foo", "other" => "thing"})
+      assert :ok = Mold.exam(mold, %{"r" => "foo", "other" => "thing"})
+      assert :ok = Mold.exam(mold, %{"r" => "foo", "o" => "foo", "other" => "thing"})
 
       assert {:error, %{"other" => "is not allowed"}} =
-               Mold.exam(exclusive_spec, %{"r" => "foo", "o" => "foo", "other" => "thing"})
+               Mold.exam(exclusive_mold, %{"r" => "foo", "other" => "thing"})
+
+      assert {:error, %{"other" => "is not allowed"}} =
+               Mold.exam(exclusive_mold, %{"r" => "foo", "o" => "foo", "other" => "thing"})
     end
 
     test "detects nested errors" do
       required = %{"r" => %Mold.Str{error_message: "bad r"}}
       optional = %{"o" => %Mold.Str{error_message: "bad o"}}
 
-      spec = Mold.prep!(%Rec{required: required, optional: optional})
+      mold = Mold.prep!(%Rec{required: required, optional: optional})
 
-      assert :ok = Mold.exam(spec, %{"r" => "foo", "other" => "thing"})
-      assert :ok = Mold.exam(spec, %{"r" => "foo", "o" => "foo", "other" => "thing"})
+      assert :ok = Mold.exam(mold, %{"r" => "foo", "other" => "thing"})
+      assert :ok = Mold.exam(mold, %{"r" => "foo", "o" => "foo", "other" => "thing"})
 
-      assert {:error, %{"r" => "bad r"}} = Mold.exam(spec, %{"r" => 1, "other" => 1})
+      assert {:error, %{"r" => "bad r"}} = Mold.exam(mold, %{"r" => 1, "other" => 1})
 
       assert {:error, %{"o" => "bad o"}} =
-               Mold.exam(spec, %{"r" => "foo", "o" => 1, "other" => 1})
+               Mold.exam(mold, %{"r" => "foo", "o" => 1, "other" => 1})
 
       assert {:error, %{"r" => "bad r", "o" => "bad o"}} =
-               Mold.exam(spec, %{"r" => 1, "o" => 1, "other" => 1})
+               Mold.exam(mold, %{"r" => 1, "o" => 1, "other" => 1})
     end
 
     test "detects deeply nested errors" do
       required = %{"r" => %Mold.Str{error_message: "bad r str"}}
       optional = %{"o" => %Mold.Str{error_message: "bad o str"}}
 
-      nested_rec_spec = %Rec{
+      nested_rec_mold = %Rec{
         required: required,
         optional: optional
       }
 
-      spec =
+      mold =
         Mold.prep!(%Rec{
-          required: %{"r" => Map.put(nested_rec_spec, :error_message, "bad r rec")},
-          optional: %{"o" => Map.put(nested_rec_spec, :error_message, "bad o rec")}
+          required: %{"r" => Map.put(nested_rec_mold, :error_message, "bad r rec")},
+          optional: %{"o" => Map.put(nested_rec_mold, :error_message, "bad o rec")}
         })
 
       assert :ok =
-               Mold.exam(spec, %{
+               Mold.exam(mold, %{
                  "r" => %{"r" => "foo", "o" => "foo", "x" => "?"},
                  "o" => %{"r" => "foo", "o" => "foo", "x" => "?"},
                  "x" => "?"
                })
 
       assert :ok =
-               Mold.exam(spec, %{
+               Mold.exam(mold, %{
                  "r" => %{"r" => "foo"},
                  "o" => %{"r" => "foo", "o" => "foo", "x" => "?"},
                  "x" => "?"
                })
 
-      assert :ok = Mold.exam(spec, %{"r" => %{"r" => "foo"}})
+      assert :ok = Mold.exam(mold, %{"r" => %{"r" => "foo"}})
 
       assert {:error, errors} =
-               Mold.exam(spec, %{
+               Mold.exam(mold, %{
                  "r" => %{"r" => 1, "o" => 1, "x" => "?"},
                  "o" => %{"o" => 1, "x" => "?"},
                  "x" => "?"
@@ -274,7 +274,7 @@ defmodule Mold.RecTest do
                }
              }
 
-      assert {:error, errors} = Mold.exam(spec, %{"o" => %{"o" => 1, "x" => "?"}, "x" => "?"})
+      assert {:error, errors} = Mold.exam(mold, %{"o" => %{"o" => 1, "x" => "?"}, "x" => "?"})
 
       assert errors == %{
                "r" => "is required",
@@ -285,7 +285,7 @@ defmodule Mold.RecTest do
              }
 
       assert {:error, errors} =
-               Mold.exam(spec, %{"r" => 1, "o" => %{"o" => 1, "x" => "?"}, "x" => "?"})
+               Mold.exam(mold, %{"r" => 1, "o" => %{"o" => 1, "x" => "?"}, "x" => "?"})
 
       assert errors == %{
                "r" => "bad r rec",
@@ -295,13 +295,13 @@ defmodule Mold.RecTest do
                }
              }
 
-      assert {:error, %{"r" => "bad r rec"}} = Mold.exam(spec, %{"r" => 1, "other" => 1})
+      assert {:error, %{"r" => "bad r rec"}} = Mold.exam(mold, %{"r" => 1, "other" => 1})
 
       assert {:error, %{"o" => "bad o rec"}} =
-               Mold.exam(spec, %{"r" => "foo", "o" => 1, "other" => 1})
+               Mold.exam(mold, %{"r" => "foo", "o" => 1, "other" => 1})
 
       assert {:error, %{"r" => "bad r rec", "o" => "bad o rec"}} =
-               Mold.exam(spec, %{"r" => 1, "o" => 1, "other" => 1})
+               Mold.exam(mold, %{"r" => 1, "o" => 1, "other" => 1})
     end
   end
 end

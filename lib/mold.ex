@@ -1,4 +1,4 @@
 defprotocol Mold do
-  def prep!(spec)
-  def exam(spec, value)
+  def prep!(mold)
+  def exam(mold, value)
 end

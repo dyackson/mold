@@ -21,12 +21,12 @@ defmodule Mold.IntTest do
 
     test "given an invalid bound" do
       Enum.each([:lt, :lte, :gt, :gte], fn bound ->
-        spec = Map.put(%Int{}, bound, "some shit")
+        mold = Map.put(%Int{}, bound, "some shit")
 
         assert_raise(
           Error,
           "#{inspect(bound)} must be an integer",
-          fn -> Mold.prep!(spec) end
+          fn -> Mold.prep!(mold) end
         )
       end)
     end
@@ -44,13 +44,13 @@ defmodule Mold.IntTest do
     test "lower bound is greater than upper bound" do
       for lower <- [:gt, :gte], upper <- [:lt, :lte] do
         assert_raise Error, "#{inspect(lower)} must be less than #{inspect(upper)}", fn ->
-          spec = Map.merge(%Int{}, %{lower => 5, upper => 3})
-          Mold.prep!(spec)
+          mold = Map.merge(%Int{}, %{lower => 5, upper => 3})
+          Mold.prep!(mold)
         end
 
         assert_raise Error, "#{inspect(lower)} must be less than #{inspect(upper)}", fn ->
-          spec = Map.merge(%Int{}, %{lower => 5, upper => 5})
-          Mold.prep!(spec)
+          mold = Map.merge(%Int{}, %{lower => 5, upper => 5})
+          Mold.prep!(mold)
         end
       end
     end
@@ -102,12 +102,12 @@ defmodule Mold.IntTest do
   end
 
   describe "Mold.exam using Int" do
-    test "Error if the spec isn't prepped" do
+    test "Error if the mold isn't prepped" do
       unprepped = %Int{}
 
       assert_raise(
         Error,
-        "you must call Mold.prep/1 on the spec before calling Mold.exam/2",
+        "you must call Mold.prep/1 on the mold before calling Mold.exam/2",
         fn ->
           Mold.exam(unprepped, true)
         end
@@ -115,64 +115,64 @@ defmodule Mold.IntTest do
     end
 
     test "allows nil iff nil_ok?" do
-      nil_ok_spec = Mold.prep!(%Int{nil_ok?: true})
-      nil_not_ok_spec = Mold.prep!(%Int{error_message: "dammit"})
+      nil_ok_mold = Mold.prep!(%Int{nil_ok?: true})
+      nil_not_ok_mold = Mold.prep!(%Int{error_message: "dammit"})
 
-      :ok = Mold.exam(nil_ok_spec, nil)
-      {:error, "dammit"} = Mold.exam(nil_not_ok_spec, nil)
+      :ok = Mold.exam(nil_ok_mold, nil)
+      {:error, "dammit"} = Mold.exam(nil_not_ok_mold, nil)
     end
 
     test "fail if not an integer" do
-      spec = Mold.prep!(%Int{error_message: "dammit"})
-      [1, -1] |> Enum.each(&assert :ok = Mold.exam(spec, &1))
+      mold = Mold.prep!(%Int{error_message: "dammit"})
+      [1, -1] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
 
       ["1", true, "bla", Decimal.new(1)]
-      |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
 
     test "takes an :also function" do
-      spec = Mold.prep!(%Int{error_message: "dammit", also: &Integer.is_even/1})
+      mold = Mold.prep!(%Int{error_message: "dammit", also: &Integer.is_even/1})
 
-      :ok = Mold.exam(spec, 4)
-      {:error, "dammit"} = Mold.exam(spec, 5)
+      :ok = Mold.exam(mold, 4)
+      {:error, "dammit"} = Mold.exam(mold, 5)
     end
 
     test "Error if :also doesn't return a boolean" do
-      spec = Mold.prep!(%Int{error_message: "dammit", also: fn _ -> :some_shit end})
+      mold = Mold.prep!(%Int{error_message: "dammit", also: fn _ -> :some_shit end})
 
       assert_raise(Error, ":also must return a boolean, but it returned :some_shit", fn ->
-        Mold.exam(spec, 1)
+        Mold.exam(mold, 1)
       end)
     end
 
     test "checks :gt" do
-      spec = Mold.prep!(%Int{gt: 2, error_message: "dammit"})
-      assert :ok = Mold.exam(spec, 3)
-      [1, 2] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      mold = Mold.prep!(%Int{gt: 2, error_message: "dammit"})
+      assert :ok = Mold.exam(mold, 3)
+      [1, 2] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
 
     test "checks :gte" do
-      spec = Mold.prep!(%Int{gte: 2, error_message: "dammit"})
-      [2, 3] |> Enum.each(&assert :ok = Mold.exam(spec, &1))
-      assert {:error, "dammit"} = Mold.exam(spec, 1)
+      mold = Mold.prep!(%Int{gte: 2, error_message: "dammit"})
+      [2, 3] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
+      assert {:error, "dammit"} = Mold.exam(mold, 1)
     end
 
     test "checks :lt" do
-      spec = Mold.prep!(%Int{lt: 2, error_message: "dammit"})
-      assert :ok = Mold.exam(spec, 1)
-      [2, 3] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      mold = Mold.prep!(%Int{lt: 2, error_message: "dammit"})
+      assert :ok = Mold.exam(mold, 1)
+      [2, 3] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
 
     test "checks :lte" do
-      spec = Mold.prep!(%Int{lte: 2, error_message: "dammit"})
-      [1, 2] |> Enum.each(&assert :ok = Mold.exam(spec, &1))
-      assert {:error, "dammit"} = Mold.exam(spec, 3)
+      mold = Mold.prep!(%Int{lte: 2, error_message: "dammit"})
+      [1, 2] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
+      assert {:error, "dammit"} = Mold.exam(mold, 3)
     end
 
     test "checks both an upper and lower bound" do
-      spec = Mold.prep!(%Int{gte: 5, lt: 10, error_message: "dammit"})
-      [5, 9] |> Enum.each(&assert :ok = Mold.exam(spec, &1))
-      [4, 11] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      mold = Mold.prep!(%Int{gte: 5, lt: 10, error_message: "dammit"})
+      [5, 9] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
+      [4, 11] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
   end
 end

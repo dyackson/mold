@@ -119,12 +119,12 @@ defmodule Mold.StrTest do
   end
 
   describe "Mold.exam using Str" do
-    test "Error if the spec isn't prepped" do
+    test "Error if the mold isn't prepped" do
       unprepped = %Str{}
 
       assert_raise(
         Error,
-        "you must call Mold.prep/1 on the spec before calling Mold.exam/2",
+        "you must call Mold.prep/1 on the mold before calling Mold.exam/2",
         fn ->
           Mold.exam(unprepped, true)
         end
@@ -132,77 +132,77 @@ defmodule Mold.StrTest do
     end
 
     test "allows nil iff nil_ok?" do
-      nil_ok_spec = Mold.prep!(%Str{nil_ok?: true})
-      nil_not_ok_spec = Mold.prep!(%Str{error_message: "dammit"})
+      nil_ok_mold = Mold.prep!(%Str{nil_ok?: true})
+      nil_not_ok_mold = Mold.prep!(%Str{error_message: "dammit"})
 
-      :ok = Mold.exam(nil_ok_spec, nil)
-      {:error, "dammit"} = Mold.exam(nil_not_ok_spec, nil)
+      :ok = Mold.exam(nil_ok_mold, nil)
+      {:error, "dammit"} = Mold.exam(nil_not_ok_mold, nil)
     end
 
     test "fail if not a string" do
-      spec = Mold.prep!(%Str{error_message: "dammit"})
-      assert :ok = Mold.exam(spec, "yes")
-      assert :ok = Mold.exam(spec, "")
+      mold = Mold.prep!(%Str{error_message: "dammit"})
+      assert :ok = Mold.exam(mold, "yes")
+      assert :ok = Mold.exam(mold, "")
 
       [1, true, %{}, Decimal.new(1)]
-      |> Enum.each(&assert {:error, "dammit"} = Mold.exam(spec, &1))
+      |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
     end
 
     test "takes an :also function" do
-      spec = Mold.prep!(%Str{error_message: "dammit", also: &(&1 == String.reverse(&1))})
+      mold = Mold.prep!(%Str{error_message: "dammit", also: &(&1 == String.reverse(&1))})
 
-      :ok = Mold.exam(spec, "able was i ere i saw elba")
-      {:error, "dammit"} = Mold.exam(spec, "anagram")
+      :ok = Mold.exam(mold, "able was i ere i saw elba")
+      {:error, "dammit"} = Mold.exam(mold, "anagram")
     end
 
     test "Error if :also doesn't return a boolean" do
-      spec = Mold.prep!(%Str{error_message: "dammit", also: fn _ -> :some_shit end})
+      mold = Mold.prep!(%Str{error_message: "dammit", also: fn _ -> :some_shit end})
 
       assert_raise(Error, ":also must return a boolean, but it returned :some_shit", fn ->
-        Mold.exam(spec, "pow")
+        Mold.exam(mold, "pow")
       end)
     end
 
     test "checks :regex" do
-      spec = Mold.prep!(%Str{error_message: "dammit", regex: ~r/^\d+$/})
-      assert :ok = Mold.exam(spec, "123")
-      assert {:error, "dammit"} = Mold.exam(spec, "1 2 3")
+      mold = Mold.prep!(%Str{error_message: "dammit", regex: ~r/^\d+$/})
+      assert :ok = Mold.exam(mold, "123")
+      assert {:error, "dammit"} = Mold.exam(mold, "1 2 3")
     end
 
     test "checks :one_of" do
-      spec = Mold.prep!(%Str{error_message: "dammit", one_of: ["Paul", "Art"]})
-      assert :ok = Mold.exam(spec, "Art")
-      assert {:error, "dammit"} = Mold.exam(spec, "art")
-      assert {:error, "dammit"} = Mold.exam(spec, "steve")
+      mold = Mold.prep!(%Str{error_message: "dammit", one_of: ["Paul", "Art"]})
+      assert :ok = Mold.exam(mold, "Art")
+      assert {:error, "dammit"} = Mold.exam(mold, "art")
+      assert {:error, "dammit"} = Mold.exam(mold, "steve")
     end
 
     test "checks :one_of_ci" do
-      spec = Mold.prep!(%Str{error_message: "dammit", one_of_ci: ["Paul", "Art"]})
-      assert :ok = Mold.exam(spec, "Art")
-      assert :ok = Mold.exam(spec, "art")
-      assert {:error, "dammit"} = Mold.exam(spec, "steve")
+      mold = Mold.prep!(%Str{error_message: "dammit", one_of_ci: ["Paul", "Art"]})
+      assert :ok = Mold.exam(mold, "Art")
+      assert :ok = Mold.exam(mold, "art")
+      assert {:error, "dammit"} = Mold.exam(mold, "steve")
     end
 
     test "checks :min_length" do
-      spec = Mold.prep!(%Str{error_message: "dammit", min_length: 4})
-      assert :ok = Mold.exam(spec, "12345")
-      assert :ok = Mold.exam(spec, "1234")
-      assert {:error, "dammit"} = Mold.exam(spec, "123")
+      mold = Mold.prep!(%Str{error_message: "dammit", min_length: 4})
+      assert :ok = Mold.exam(mold, "12345")
+      assert :ok = Mold.exam(mold, "1234")
+      assert {:error, "dammit"} = Mold.exam(mold, "123")
     end
 
     test "checks :max_length" do
-      spec = Mold.prep!(%Str{error_message: "dammit", max_length: 4})
-      assert {:error, "dammit"} = Mold.exam(spec, "12345")
-      assert :ok = Mold.exam(spec, "1234")
-      assert :ok = Mold.exam(spec, "123")
+      mold = Mold.prep!(%Str{error_message: "dammit", max_length: 4})
+      assert {:error, "dammit"} = Mold.exam(mold, "12345")
+      assert :ok = Mold.exam(mold, "1234")
+      assert :ok = Mold.exam(mold, "123")
     end
 
     test "checks both :min_length and :max_length" do
-      spec = Mold.prep!(%Str{error_message: "dammit", min_length: 3, max_length: 4})
-      assert {:error, "dammit"} = Mold.exam(spec, "12345")
-      assert :ok = Mold.exam(spec, "1234")
-      assert :ok = Mold.exam(spec, "123")
-      assert {:error, "dammit"} = Mold.exam(spec, "12")
+      mold = Mold.prep!(%Str{error_message: "dammit", min_length: 3, max_length: 4})
+      assert {:error, "dammit"} = Mold.exam(mold, "12345")
+      assert :ok = Mold.exam(mold, "1234")
+      assert :ok = Mold.exam(mold, "123")
+      assert {:error, "dammit"} = Mold.exam(mold, "12")
     end
   end
 end

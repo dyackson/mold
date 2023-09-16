@@ -15,11 +15,11 @@ defmodule Mold.Int do
   ]
 
   defimpl Mold do
-    def prep!(%Spec{} = spec) do
-      spec = Common.prep!(spec)
+    def prep!(%Spec{} = mold) do
+      mold = Common.prep!(mold)
 
       bad_bound =
-        case spec do
+        case mold do
           %{lt: lt} when not (lt == nil or is_integer(lt)) ->
             :lt
 
@@ -38,14 +38,14 @@ defmodule Mold.Int do
 
       if bad_bound, do: raise(Error.new("#{inspect(bad_bound)} must be an integer"))
 
-      if is_integer(spec.gt) and is_integer(spec.gte),
+      if is_integer(mold.gt) and is_integer(mold.gte),
         do: raise(Error.new("cannot use both :gt and :gte"))
 
-      if is_integer(spec.lt) and is_integer(spec.lte),
+      if is_integer(mold.lt) and is_integer(mold.lte),
         do: raise(Error.new("cannot use both :lt and :lte"))
 
       impossible_bounds =
-        case spec do
+        case mold do
           %{gt: gt, lt: lt} when is_integer(gt) and is_integer(lt) and gt >= lt ->
             {:gt, :lt}
 
@@ -70,45 +70,45 @@ defmodule Mold.Int do
           nil
       end
 
-      spec
+      mold
       |> add_error_message()
       |> Map.put(:__prepped__, true)
     end
 
-    def exam(%Spec{} = spec, val) do
-      spec = Common.check_prepped!(spec)
+    def exam(%Spec{} = mold, val) do
+      mold = Common.check_prepped!(mold)
 
-      case {spec.nil_ok?, val} do
+      case {mold.nil_ok?, val} do
         {true, nil} ->
           :ok
 
         {false, nil} ->
-          {:error, spec.error_message}
+          {:error, mold.error_message}
 
         _ ->
-          # check the non-nil value with the spec
-          with :ok <- local_exam(spec, val),
-               :ok <- Common.apply_also(spec, val) do
+          # check the non-nil value with the mold
+          with :ok <- local_exam(mold, val),
+               :ok <- Common.apply_also(mold, val) do
             :ok
           else
-            :error -> {:error, spec.error_message}
+            :error -> {:error, mold.error_message}
           end
       end
     end
 
-    defp local_exam(%Spec{} = spec, val) do
+    defp local_exam(%Spec{} = mold, val) do
       with true <- is_integer(val),
-           true <- spec.lt == nil or val < spec.lt,
-           true <- spec.lte == nil or val <= spec.lte,
-           true <- spec.gt == nil or val > spec.gt,
-           true <- spec.gte == nil or val >= spec.gte do
+           true <- mold.lt == nil or val < mold.lt,
+           true <- mold.lte == nil or val <= mold.lte,
+           true <- mold.gt == nil or val > mold.gt,
+           true <- mold.gte == nil or val >= mold.gte do
         :ok
       else
         _ -> :error
       end
     end
 
-    def add_error_message(%Mold.Int{error_message: nil} = spec) do
+    def add_error_message(%Mold.Int{error_message: nil} = mold) do
       details =
         Enum.reduce(
           [
@@ -119,7 +119,7 @@ defmodule Mold.Int do
           ],
           [],
           fn {bound, desc}, details ->
-            case Map.get(spec, bound) do
+            case Map.get(mold, bound) do
               nil -> details
               int when is_integer(int) -> ["#{desc} #{int}" | details]
             end
@@ -135,15 +135,15 @@ defmodule Mold.Int do
           [d1, d2] -> " " <> d1 <> " and " <> d2
         end
 
-      preamble = if spec.nil_ok?, do: "if not nil, ", else: ""
+      preamble = if mold.nil_ok?, do: "if not nil, ", else: ""
 
       Map.put(
-        spec,
+        mold,
         :error_message,
         preamble <> "must be an integer" <> details
       )
     end
 
-    def add_error_message(%Mold.Int{} = spec), do: spec
+    def add_error_message(%Mold.Int{} = mold), do: mold
   end
 end

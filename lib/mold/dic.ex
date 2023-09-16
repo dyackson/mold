@@ -15,34 +15,34 @@ defmodule Mold.Dic do
   ]
 
   defimpl Mold do
-    def prep!(%Spec{} = spec) do
-      spec
+    def prep!(%Spec{} = mold) do
+      mold
       |> Common.prep!()
       |> local_prep!()
       |> Map.put(:__prepped__, true)
     end
 
-    def exam(%Spec{} = spec, val) do
-      spec = Common.check_prepped!(spec)
+    def exam(%Spec{} = mold, val) do
+      mold = Common.check_prepped!(mold)
 
-      with :not_nil <- Common.exam_nil(spec, val),
-           :ok <- local_exam(spec, val),
-           :ok <- Common.apply_also(spec, val) do
+      with :not_nil <- Common.exam_nil(mold, val),
+           :ok <- local_exam(mold, val),
+           :ok <- Common.apply_also(mold, val) do
         :ok
       else
         :ok -> :ok
-        :error -> {:error, spec.error_message}
+        :error -> {:error, mold.error_message}
         {:error, %{} = _nested_error_map} = it -> it
       end
     end
 
-    defp local_prep!(%Spec{min_size: min_size, max_size: max_size} = spec) do
+    defp local_prep!(%Spec{min_size: min_size, max_size: max_size} = mold) do
       prep_error_msg =
         cond do
-          !Mold.impl_for(spec.keys) || spec.keys.__struct__ not in [Mold.Str, Mold.Int] ->
+          !Mold.impl_for(mold.keys) || mold.keys.__struct__ not in [Mold.Str, Mold.Int] ->
             ":keys must be an %Mold.Str{} or %Mold.Int{}"
 
-          !Mold.impl_for(spec.vals) ->
+          !Mold.impl_for(mold.vals) ->
             ":vals must implement the Mold protocol"
 
           not (is_nil(min_size) || (is_integer(min_size) and min_size >= 0)) ->
@@ -60,21 +60,21 @@ defmodule Mold.Dic do
 
       if is_binary(prep_error_msg), do: raise(Error.new(prep_error_msg))
 
-      spec =
-        spec
+      mold =
+        mold
         |> Map.update!(:keys, &Mold.prep!/1)
         |> Map.update!(:vals, &Mold.prep!/1)
 
-      if is_binary(spec.error_message) do
+      if is_binary(mold.error_message) do
         # user-supplied error message exists, use nothing to do
-        spec
+        mold
       else
         key_val_msg =
           "where each key " <>
-            spec.keys.error_message <> ", and each value " <> spec.vals.error_message
+            mold.keys.error_message <> ", and each value " <> mold.vals.error_message
 
         error_message =
-          case {spec.min_size, spec.max_size} do
+          case {mold.min_size, mold.max_size} do
             {nil, nil} ->
               "must be a mapping " <> key_val_msg
 
@@ -88,32 +88,32 @@ defmodule Mold.Dic do
               "must be a mapping with at least #{min} and at most #{max} entries, " <> key_val_msg
           end
 
-        Map.put(spec, :error_message, error_message)
+        Map.put(mold, :error_message, error_message)
       end
     end
 
     defp local_exam(%Spec{}, val) when not is_map(val), do: :error
 
-    defp local_exam(%Spec{} = spec, val)
-         when is_integer(spec.min_size) and map_size(val) < spec.min_size,
+    defp local_exam(%Spec{} = mold, val)
+         when is_integer(mold.min_size) and map_size(val) < mold.min_size,
          do: :error
 
-    defp local_exam(%Spec{} = spec, val)
-         when is_integer(spec.max_size) and map_size(val) > spec.max_size,
+    defp local_exam(%Spec{} = mold, val)
+         when is_integer(mold.max_size) and map_size(val) > mold.max_size,
          do: :error
 
-    defp local_exam(%Spec{} = spec, val) do
+    defp local_exam(%Spec{} = mold, val) do
       {nested_errors, bad_keys} =
         Enum.reduce(val, {%{}, []}, fn
           {key, val}, {nested_errors, bad_keys} = _acc ->
             bad_keys =
-              case Mold.exam(spec.keys, key) do
+              case Mold.exam(mold.keys, key) do
                 {:error, _msg} -> [key | bad_keys]
                 :ok -> bad_keys
               end
 
             nested_errors =
-              case Mold.exam(spec.vals, val) do
+              case Mold.exam(mold.vals, val) do
                 {:error, error} -> Map.put(nested_errors, key, error)
                 :ok -> nested_errors
               end
@@ -121,13 +121,13 @@ defmodule Mold.Dic do
             {nested_errors, bad_keys}
         end)
 
-      # use a special field for bad keys because putting them in the error map the normal way is ambiguous
+      # use a moldial field for bad keys because putting them in the error map the normal way is ambiguous
       error_map =
         case bad_keys do
           [_ | _] ->
             Map.put(nested_errors, "__key_errors__", %{
               keys: Enum.sort(bad_keys),
-              message: spec.keys.error_message
+              message: mold.keys.error_message
             })
 
           [] ->

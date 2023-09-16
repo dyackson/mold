@@ -18,7 +18,7 @@ defmodule Mold.AnyTest do
     end
 
     test "adds the default error message" do
-      assert %Any{error_message: "must be a boolean"} = Mold.prep!(%Any{})
+      assert %Any{error_message: "must be something"} = Mold.prep!(%Any{})
     end
 
     test "can use custom error message" do

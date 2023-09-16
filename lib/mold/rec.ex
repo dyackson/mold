@@ -14,32 +14,32 @@ defmodule Mold.Rec do
   ]
 
   defimpl Mold do
-    @spec_map_msg "must be a Map with string keys and Mold protocol-implementing values"
+    @mold_map_msg "must be a Map with string keys and Mold protocol-implementing values"
 
-    def prep!(%Spec{} = spec) do
-      spec
+    def prep!(%Spec{} = mold) do
+      mold
       |> Common.prep!()
       |> local_prep!()
       |> Map.put(:__prepped__, true)
     end
 
-    def exam(%Spec{} = spec, val) do
-      spec = Common.check_prepped!(spec)
+    def exam(%Spec{} = mold, val) do
+      mold = Common.check_prepped!(mold)
 
-      with :not_nil <- Common.exam_nil(spec, val),
-           :ok <- local_exam(spec, val),
-           :ok <- Common.apply_also(spec, val) do
+      with :not_nil <- Common.exam_nil(mold, val),
+           :ok <- local_exam(mold, val),
+           :ok <- Common.apply_also(mold, val) do
         :ok
       else
         :ok -> :ok
-        :error -> {:error, spec.error_message}
+        :error -> {:error, mold.error_message}
         {:error, %{} = _nested_error_map} = it -> it
       end
     end
 
-    defp local_prep!(%Spec{} = spec) do
+    defp local_prep!(%Spec{} = mold) do
       prep_error_msg =
-        case spec do
+        case mold do
           %{exclusive?: ex} when not is_boolean(ex) ->
             ":exclusive? must be a boolean"
 
@@ -47,10 +47,10 @@ defmodule Mold.Rec do
             ":required and/or :optional must be used if :exclusive? is true"
 
           %{optional: o} when not is_map(o) ->
-            ":optional " <> @spec_map_msg
+            ":optional " <> @mold_map_msg
 
           %{required: r} when not is_map(r) ->
-            ":required " <> @spec_map_msg
+            ":required " <> @mold_map_msg
 
           _ ->
             nil
@@ -59,28 +59,28 @@ defmodule Mold.Rec do
       if is_binary(prep_error_msg) do
         raise Error.new(prep_error_msg)
       else
-        # recursively prep the nested fields on the spec
+        # recursively prep the nested fields on the mold
         prepped_required =
-          Map.new(spec.required, fn {key, val} ->
-            if not (is_binary(key) and is_spec?(val)),
-              do: raise(Error.new(":required " <> @spec_map_msg))
+          Map.new(mold.required, fn {key, val} ->
+            if not (is_binary(key) and is_mold?(val)),
+              do: raise(Error.new(":required " <> @mold_map_msg))
 
             {key, Mold.prep!(val)}
           end)
 
         prepped_optional =
-          Map.new(spec.optional, fn {key, val} ->
-            if not (is_binary(key) and is_spec?(val)),
-              do: raise(Error.new(":optional " <> @spec_map_msg))
+          Map.new(mold.optional, fn {key, val} ->
+            if not (is_binary(key) and is_mold?(val)),
+              do: raise(Error.new(":optional " <> @mold_map_msg))
 
             {key, Mold.prep!(val)}
           end)
 
-        spec = Map.merge(spec, %{required: prepped_required, optional: prepped_optional})
+        mold = Map.merge(mold, %{required: prepped_required, optional: prepped_optional})
 
         # check for duplicates in required and optional fields, not allowed
-        optional_keys = spec.optional |> Map.keys() |> MapSet.new()
-        required_keys = spec.required |> Map.keys() |> MapSet.new()
+        optional_keys = mold.optional |> Map.keys() |> MapSet.new()
+        required_keys = mold.required |> Map.keys() |> MapSet.new()
 
         shared_keys =
           MapSet.intersection(optional_keys, required_keys) |> MapSet.to_list() |> Enum.join(", ")
@@ -91,28 +91,28 @@ defmodule Mold.Rec do
           )
         end
 
-        # add the error message to the spec
-        if is_binary(spec.error_message) do
+        # add the error message to the mold
+        if is_binary(mold.error_message) do
           # user-supplied error message exists, use nothing to do
-          spec
+          mold
         else
           # tell them it must be a map with such and such keys
           required_key_str =
-            spec.required
+            mold.required
             |> Map.keys()
             |> Enum.sort()
             |> Enum.map(&~s["#{&1}"])
             |> Enum.join(", ")
 
           optional_key_str =
-            spec.optional
+            mold.optional
             |> Map.keys()
             |> Enum.sort()
             |> Enum.map(&~s["#{&1}"])
             |> Enum.join(", ")
 
           error_message =
-            case {spec.exclusive?, required_key_str, optional_key_str} do
+            case {mold.exclusive?, required_key_str, optional_key_str} do
               {false, "", ""} ->
                 "must be a record"
 
@@ -139,25 +139,25 @@ defmodule Mold.Rec do
                   r <> " and the optional keys " <> o
             end
 
-          Map.put(spec, :error_message, error_message)
+          Map.put(mold, :error_message, error_message)
         end
       end
     end
 
     defp local_exam(%Spec{}, val) when not is_map(val), do: :error
 
-    defp local_exam(%Spec{} = spec, %{}) when spec.required == %{} and spec.optional == %{},
+    defp local_exam(%Spec{} = mold, %{}) when mold.required == %{} and mold.optional == %{},
       do: :ok
 
-    defp local_exam(%Spec{} = spec, rec = %{}) do
-      required = spec.required |> Map.keys() |> MapSet.new()
+    defp local_exam(%Spec{} = mold, rec = %{}) do
+      required = mold.required |> Map.keys() |> MapSet.new()
       actual = rec |> Map.keys() |> MapSet.new()
 
       missing = MapSet.difference(required, actual) |> Map.new(&{&1, "is required"})
 
       not_allowed =
-        if spec.exclusive? do
-          optional = spec.optional |> Map.keys() |> MapSet.new()
+        if mold.exclusive? do
+          optional = mold.optional |> Map.keys() |> MapSet.new()
           allowed = MapSet.intersection(required, optional)
           MapSet.difference(actual, allowed) |> Map.new(&{&1, "is not allowed"})
         else
@@ -168,11 +168,11 @@ defmodule Mold.Rec do
 
       errors_by_field =
         Enum.reduce(rec, errors_so_far, fn {key, val}, acc ->
-          spec = Map.get(spec.required, key) || Map.get(spec.optional, key)
+          mold = Map.get(mold.required, key) || Map.get(mold.optional, key)
           missing? = Map.has_key?(missing, key)
 
-          # recurse if the field is spec'd and present
-          result = if spec == nil or missing?, do: :ok, else: Mold.exam(spec, val)
+          # recurse if the field is mold'd and present
+          result = if mold == nil or missing?, do: :ok, else: Mold.exam(mold, val)
 
           case result do
             :ok ->
@@ -186,6 +186,6 @@ defmodule Mold.Rec do
       if errors_by_field == %{}, do: :ok, else: {:error, errors_by_field}
     end
 
-    def is_spec?(val), do: Mold.impl_for(val) != nil
+    def is_mold?(val), do: Mold.impl_for(val) != nil
   end
 end

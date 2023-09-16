@@ -15,38 +15,38 @@ defmodule Mold.Lst do
   ]
 
   defimpl Mold do
-    def prep!(%Spec{} = spec) do
-      spec
+    def prep!(%Spec{} = mold) do
+      mold
       |> Common.prep!()
       |> local_prep!()
       |> Map.put(:__prepped__, true)
     end
 
-    def exam(%Spec{} = spec, val) do
-      spec = Common.check_prepped!(spec)
+    def exam(%Spec{} = mold, val) do
+      mold = Common.check_prepped!(mold)
 
-      case {spec.nil_ok?, val} do
+      case {mold.nil_ok?, val} do
         {true, nil} ->
           :ok
 
         {false, nil} ->
-          {:error, spec.error_message}
+          {:error, mold.error_message}
 
         _ ->
-          # check the non-nil value with the spec
-          with :ok <- local_exam(spec, val),
-               :ok <- Common.apply_also(spec, val) do
+          # check the non-nil value with the mold
+          with :ok <- local_exam(mold, val),
+               :ok <- Common.apply_also(mold, val) do
             :ok
           else
-            :error -> {:error, spec.error_message}
+            :error -> {:error, mold.error_message}
             {:error, %{} = _nested_error_map} = it -> it
           end
       end
     end
 
-    defp local_prep!(%Spec{} = spec) do
+    defp local_prep!(%Spec{} = mold) do
       length_error_msg =
-        case spec do
+        case mold do
           %{min_length: l} when not (is_nil(l) or (is_integer(l) and l >= 0)) ->
             ":min_length must be a non-negative integer"
 
@@ -63,40 +63,40 @@ defmodule Mold.Lst do
 
       if is_binary(length_error_msg), do: raise(Error.new(length_error_msg))
 
-      if not is_spec?(spec.of),
+      if not is_mold?(mold.of),
         do: raise(Error.new(":of is required and must implement the Mold protocol"))
 
-      spec = Map.put(spec, :of, Mold.prep!(spec.of))
-      # add the error message to the spec
-      if is_binary(spec.error_message) do
+      mold = Map.put(mold, :of, Mold.prep!(mold.of))
+      # add the error message to the mold
+      if is_binary(mold.error_message) do
         # user-supplied error message exists, use it, nothing to do
-        spec
+        mold
       else
         error_message =
-          case {spec.min_length, spec.max_length} do
+          case {mold.min_length, mold.max_length} do
             {nil, nil} ->
-              "must be a list in which each element " <> spec.of.error_message
+              "must be a list in which each element " <> mold.of.error_message
 
             {min, nil} ->
               "must be a list with at least #{min} elements, each of which " <>
-                spec.of.error_message
+                mold.of.error_message
 
             {nil, max} ->
               "must be a list with at most #{max} elements, each of which " <>
-                spec.of.error_message
+                mold.of.error_message
 
             {min, max} ->
               "must be a list with at least #{min} and at most #{max} elements, each of which " <>
-                spec.of.error_message
+                mold.of.error_message
           end
 
-        Map.put(spec, :error_message, error_message)
+        Map.put(mold, :error_message, error_message)
       end
     end
 
     defp local_exam(%Spec{}, val) when not is_list(val), do: :error
 
-    defp local_exam(%Spec{min_length: min_length, max_length: max_length} = spec, val) do
+    defp local_exam(%Spec{min_length: min_length, max_length: max_length} = mold, val) do
       length = if is_integer(min_length) or is_integer(max_length), do: length(val)
 
       cond do
@@ -111,7 +111,7 @@ defmodule Mold.Lst do
             val
             |> Enum.with_index()
             |> Enum.reduce(%{}, fn {item, index}, acc ->
-              case Mold.exam(spec.of, item) do
+              case Mold.exam(mold.of, item) do
                 :ok -> acc
                 {:error, e} when is_binary(e) or is_map(e) -> Map.put(acc, index, e)
               end
@@ -121,6 +121,6 @@ defmodule Mold.Lst do
       end
     end
 
-    def is_spec?(val), do: Mold.impl_for(val) != nil
+    def is_mold?(val), do: Mold.impl_for(val) != nil
   end
 end
