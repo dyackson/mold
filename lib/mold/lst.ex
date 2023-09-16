@@ -2,7 +2,7 @@
 defmodule Mold.Lst do
   alias Mold.Common
   alias Mold.Error
-  alias __MODULE__, as: Spec
+  alias __MODULE__, as: Lst
 
   defstruct [
     :also,
@@ -15,14 +15,14 @@ defmodule Mold.Lst do
   ]
 
   defimpl Mold do
-    def prep!(%Spec{} = mold) do
+    def prep!(%Lst{} = mold) do
       mold
       |> Common.prep!()
       |> local_prep!()
       |> Map.put(:__prepped__, true)
     end
 
-    def exam(%Spec{} = mold, val) do
+    def exam(%Lst{} = mold, val) do
       mold = Common.check_prepped!(mold)
 
       case {mold.nil_ok?, val} do
@@ -44,7 +44,7 @@ defmodule Mold.Lst do
       end
     end
 
-    defp local_prep!(%Spec{} = mold) do
+    defp local_prep!(%Lst{} = mold) do
       length_error_msg =
         case mold do
           %{min_length: l} when not (is_nil(l) or (is_integer(l) and l >= 0)) ->
@@ -94,9 +94,9 @@ defmodule Mold.Lst do
       end
     end
 
-    defp local_exam(%Spec{}, val) when not is_list(val), do: :error
+    defp local_exam(%Lst{}, val) when not is_list(val), do: :error
 
-    defp local_exam(%Spec{min_length: min_length, max_length: max_length} = mold, val) do
+    defp local_exam(%Lst{min_length: min_length, max_length: max_length} = mold, val) do
       length = if is_integer(min_length) or is_integer(max_length), do: length(val)
 
       cond do

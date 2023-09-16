@@ -1,7 +1,7 @@
 defmodule Mold.Rec do
   alias Mold.Common
   alias Mold.Error
-  alias __MODULE__, as: Spec
+  alias __MODULE__, as: Rec
 
   defstruct [
     :also,
@@ -16,14 +16,14 @@ defmodule Mold.Rec do
   defimpl Mold do
     @mold_map_msg "must be a Map with string keys and Mold protocol-implementing values"
 
-    def prep!(%Spec{} = mold) do
+    def prep!(%Rec{} = mold) do
       mold
       |> Common.prep!()
       |> local_prep!()
       |> Map.put(:__prepped__, true)
     end
 
-    def exam(%Spec{} = mold, val) do
+    def exam(%Rec{} = mold, val) do
       mold = Common.check_prepped!(mold)
 
       with :not_nil <- Common.exam_nil(mold, val),
@@ -37,7 +37,7 @@ defmodule Mold.Rec do
       end
     end
 
-    defp local_prep!(%Spec{} = mold) do
+    defp local_prep!(%Rec{} = mold) do
       prep_error_msg =
         case mold do
           %{exclusive?: ex} when not is_boolean(ex) ->
@@ -144,12 +144,12 @@ defmodule Mold.Rec do
       end
     end
 
-    defp local_exam(%Spec{}, val) when not is_map(val), do: :error
+    defp local_exam(%Rec{}, val) when not is_map(val), do: :error
 
-    defp local_exam(%Spec{} = mold, %{}) when mold.required == %{} and mold.optional == %{},
+    defp local_exam(%Rec{} = mold, %{}) when mold.required == %{} and mold.optional == %{},
       do: :ok
 
-    defp local_exam(%Spec{} = mold, rec = %{}) do
+    defp local_exam(%Rec{} = mold, rec = %{}) do
       required = mold.required |> Map.keys() |> MapSet.new()
       actual = rec |> Map.keys() |> MapSet.new()
 

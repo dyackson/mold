@@ -1,7 +1,7 @@
 defmodule Mold.Int do
   alias Mold.Common
   alias Mold.Error
-  alias __MODULE__, as: Spec
+  alias __MODULE__, as: Int
 
   defstruct [
     :gt,
@@ -15,7 +15,7 @@ defmodule Mold.Int do
   ]
 
   defimpl Mold do
-    def prep!(%Spec{} = mold) do
+    def prep!(%Int{} = mold) do
       mold = Common.prep!(mold)
 
       bad_bound =
@@ -75,7 +75,7 @@ defmodule Mold.Int do
       |> Map.put(:__prepped__, true)
     end
 
-    def exam(%Spec{} = mold, val) do
+    def exam(%Int{} = mold, val) do
       mold = Common.check_prepped!(mold)
 
       case {mold.nil_ok?, val} do
@@ -96,7 +96,7 @@ defmodule Mold.Int do
       end
     end
 
-    defp local_exam(%Spec{} = mold, val) do
+    defp local_exam(%Int{} = mold, val) do
       with true <- is_integer(val),
            true <- mold.lt == nil or val < mold.lt,
            true <- mold.lte == nil or val <= mold.lte,
@@ -108,7 +108,7 @@ defmodule Mold.Int do
       end
     end
 
-    def add_error_message(%Mold.Int{error_message: nil} = mold) do
+    def add_error_message(%Int{error_message: nil} = mold) do
       details =
         Enum.reduce(
           [
@@ -144,6 +144,6 @@ defmodule Mold.Int do
       )
     end
 
-    def add_error_message(%Mold.Int{} = mold), do: mold
+    def add_error_message(%Int{} = mold), do: mold
   end
 end

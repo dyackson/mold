@@ -1,7 +1,7 @@
 defmodule Mold.Dic do
   alias Mold.Common
   alias Mold.Error
-  alias __MODULE__, as: Spec
+  alias __MODULE__, as: Dic
 
   defstruct [
     :also,
@@ -15,14 +15,14 @@ defmodule Mold.Dic do
   ]
 
   defimpl Mold do
-    def prep!(%Spec{} = mold) do
+    def prep!(%Dic{} = mold) do
       mold
       |> Common.prep!()
       |> local_prep!()
       |> Map.put(:__prepped__, true)
     end
 
-    def exam(%Spec{} = mold, val) do
+    def exam(%Dic{} = mold, val) do
       mold = Common.check_prepped!(mold)
 
       with :not_nil <- Common.exam_nil(mold, val),
@@ -36,7 +36,7 @@ defmodule Mold.Dic do
       end
     end
 
-    defp local_prep!(%Spec{min_size: min_size, max_size: max_size} = mold) do
+    defp local_prep!(%Dic{min_size: min_size, max_size: max_size} = mold) do
       prep_error_msg =
         cond do
           !Mold.impl_for(mold.keys) || mold.keys.__struct__ not in [Mold.Str, Mold.Int] ->
@@ -92,17 +92,17 @@ defmodule Mold.Dic do
       end
     end
 
-    defp local_exam(%Spec{}, val) when not is_map(val), do: :error
+    defp local_exam(%Dic{}, val) when not is_map(val), do: :error
 
-    defp local_exam(%Spec{} = mold, val)
+    defp local_exam(%Dic{} = mold, val)
          when is_integer(mold.min_size) and map_size(val) < mold.min_size,
          do: :error
 
-    defp local_exam(%Spec{} = mold, val)
+    defp local_exam(%Dic{} = mold, val)
          when is_integer(mold.max_size) and map_size(val) > mold.max_size,
          do: :error
 
-    defp local_exam(%Spec{} = mold, val) do
+    defp local_exam(%Dic{} = mold, val) do
       {nested_errors, bad_keys} =
         Enum.reduce(val, {%{}, []}, fn
           {key, val}, {nested_errors, bad_keys} = _acc ->

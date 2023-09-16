@@ -1,7 +1,7 @@
 defmodule Mold.Dec do
   alias Mold.Common
   alias Mold.Error
-  alias __MODULE__, as: Spec
+  alias __MODULE__, as: Dec
 
   defstruct [
     :gt,
@@ -19,7 +19,7 @@ defmodule Mold.Dec do
     # not using Decimal lib to decide what's a decimal because it allows integers and scientific notation strings
     @decimal_regex ~r/^\s*-?\d*\.?\d+\s*$/
 
-    def prep!(%Spec{} = mold) do
+    def prep!(%Dec{} = mold) do
       mold
       |> Common.prep!()
       |> check_max_decimal_places!()
@@ -34,7 +34,7 @@ defmodule Mold.Dec do
       |> Map.put(:__prepped__, true)
     end
 
-    def exam(%Spec{} = mold, val) do
+    def exam(%Dec{} = mold, val) do
       mold = Common.check_prepped!(mold)
 
       with :not_nil <- Common.exam_nil(mold, val),
@@ -47,7 +47,7 @@ defmodule Mold.Dec do
       end
     end
 
-    defp local_exam(%Spec{} = mold, val) do
+    defp local_exam(%Dec{} = mold, val) do
       with true <- is_decimal_string?(val),
            true <- mold.lt == nil or Decimal.lt?(val, mold.lt),
            true <- mold.lte == nil or not Decimal.gt?(val, mold.lte),
@@ -60,13 +60,13 @@ defmodule Mold.Dec do
       end
     end
 
-    defp check_max_decimal_places!(%Spec{max_decimal_places: max_decimal_places})
+    defp check_max_decimal_places!(%Dec{max_decimal_places: max_decimal_places})
          when not is_nil(max_decimal_places) and
                 (not is_integer(max_decimal_places) or max_decimal_places < 0) do
       raise Error.new(":max_decimal_places must be a non-negative integer")
     end
 
-    defp check_max_decimal_places!(%Spec{} = mold), do: mold
+    defp check_max_decimal_places!(%Dec{} = mold), do: mold
 
     defp valid_decimal_places?(val, max_decimal_places) do
       case String.split(val, ".") do
@@ -75,7 +75,7 @@ defmodule Mold.Dec do
       end
     end
 
-    defp at_most_one!(%Spec{} = mold, [{key1, val1}, {key2, val2}]) do
+    defp at_most_one!(%Dec{} = mold, [{key1, val1}, {key2, val2}]) do
       if is_nil(val1) || is_nil(val2) do
         mold
       else
@@ -83,7 +83,7 @@ defmodule Mold.Dec do
       end
     end
 
-    defp ensure_logical_bounds!(%Spec{} = mold) do
+    defp ensure_logical_bounds!(%Dec{} = mold) do
       # at this point, at_most_one/3 has ensured there is at most one lower or upper bound
       lower_bound_tuple =
         case {mold.gt, mold.gte} do
@@ -112,7 +112,7 @@ defmodule Mold.Dec do
       end
     end
 
-    def add_error_message(%Spec{error_message: nil} = mold) do
+    def add_error_message(%Dec{error_message: nil} = mold) do
       # add the details in the opposite order that they'll be displayed so we can append to the front of the list and reverse at the end.
       details =
         case mold.max_decimal_places do
@@ -152,9 +152,9 @@ defmodule Mold.Dec do
       )
     end
 
-    def add_error_message(%Spec{} = mold), do: mold
+    def add_error_message(%Dec{} = mold), do: mold
 
-    defp parse_decimal_or_nil!(%Spec{} = mold, [{key, val}]) do
+    defp parse_decimal_or_nil!(%Dec{} = mold, [{key, val}]) do
       mold_or_error =
         case val do
           nil ->
