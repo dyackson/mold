@@ -1,6 +1,6 @@
 defmodule Mold.Int do
   alias Mold.Common
-  alias Mold.SpecError
+  alias Mold.Error
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -36,13 +36,13 @@ defmodule Mold.Int do
             nil
         end
 
-      if bad_bound, do: raise(SpecError.new("#{inspect(bad_bound)} must be an integer"))
+      if bad_bound, do: raise(Error.new("#{inspect(bad_bound)} must be an integer"))
 
       if is_integer(spec.gt) and is_integer(spec.gte),
-        do: raise(SpecError.new("cannot use both :gt and :gte"))
+        do: raise(Error.new("cannot use both :gt and :gte"))
 
       if is_integer(spec.lt) and is_integer(spec.lte),
-        do: raise(SpecError.new("cannot use both :lt and :lte"))
+        do: raise(Error.new("cannot use both :lt and :lte"))
 
       impossible_bounds =
         case spec do
@@ -64,7 +64,7 @@ defmodule Mold.Int do
 
       case impossible_bounds do
         {lower, upper} ->
-          raise SpecError.new("#{inspect(lower)} must be less than #{inspect(upper)}")
+          raise Error.new("#{inspect(lower)} must be less than #{inspect(upper)}")
 
         nil ->
           nil

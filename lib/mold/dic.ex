@@ -1,6 +1,6 @@
 defmodule Mold.Dic do
   alias Mold.Common
-  alias Mold.SpecError
+  alias Mold.Error
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -58,7 +58,7 @@ defmodule Mold.Dic do
             nil
         end
 
-      if is_binary(prep_error_msg), do: raise(SpecError.new(prep_error_msg))
+      if is_binary(prep_error_msg), do: raise(Error.new(prep_error_msg))
 
       spec =
         spec

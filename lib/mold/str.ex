@@ -1,6 +1,6 @@
 defmodule Mold.Str do
   alias Mold.Common
-  alias Mold.SpecError
+  alias Mold.Error
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -41,15 +41,15 @@ defmodule Mold.Str do
 
     defp local_prep!(%Spec{regex: regex, one_of: one_of})
          when not is_nil(regex) and not is_nil(one_of),
-         do: raise(SpecError.new("cannot use both :regex and :one_of"))
+         do: raise(Error.new("cannot use both :regex and :one_of"))
 
     defp local_prep!(%Spec{regex: regex, one_of_ci: one_of_ci})
          when not is_nil(regex) and not is_nil(one_of_ci),
-         do: raise(SpecError.new("cannot use both :regex and :one_of_ci"))
+         do: raise(Error.new("cannot use both :regex and :one_of_ci"))
 
     defp local_prep!(%Spec{one_of: one_of, one_of_ci: one_of_ci})
          when not is_nil(one_of) and not is_nil(one_of_ci),
-         do: raise(SpecError.new("cannot use both :one_of and :one_of_ci"))
+         do: raise(Error.new("cannot use both :one_of and :one_of_ci"))
 
     defp local_prep!(%Spec{} = spec)
          when (not is_nil(spec.one_of) or not is_nil(spec.one_of_ci) or not is_nil(spec.regex)) and
@@ -57,21 +57,21 @@ defmodule Mold.Str do
       field1 = Enum.find([:one_of, :one_of_ci, :regex], &(Map.get(spec, &1) != nil))
       field2 = Enum.find([:min_length, :max_length], &(Map.get(spec, &1) != nil))
 
-      raise SpecError.new("cannot use both #{inspect(field1)} and #{inspect(field2)}")
+      raise Error.new("cannot use both #{inspect(field1)} and #{inspect(field2)}")
     end
 
     defp local_prep!(%Spec{one_of: one_of}) when not (is_list(one_of) or is_nil(one_of)),
-      do: raise(SpecError.new(":one_of #{@non_empty_list_msg}"))
+      do: raise(Error.new(":one_of #{@non_empty_list_msg}"))
 
     defp local_prep!(%Spec{one_of_ci: one_of_ci})
          when not (is_list(one_of_ci) or is_nil(one_of_ci)),
-         do: raise(SpecError.new(":one_of_ci #{@non_empty_list_msg}"))
+         do: raise(Error.new(":one_of_ci #{@non_empty_list_msg}"))
 
     defp local_prep!(%Spec{one_of: []}),
-      do: raise(SpecError.new(":one_of #{@non_empty_list_msg}"))
+      do: raise(Error.new(":one_of #{@non_empty_list_msg}"))
 
     defp local_prep!(%Spec{one_of_ci: []}),
-      do: raise(SpecError.new(":one_of_ci #{@non_empty_list_msg}"))
+      do: raise(Error.new(":one_of_ci #{@non_empty_list_msg}"))
 
     ## Now at most one non-null field in [:regex, :one_of, :one_of_ci] will be present
 
@@ -79,7 +79,7 @@ defmodule Mold.Str do
       if Enum.all?(one_of, &is_binary/1) do
         spec
       else
-        raise SpecError.new(":one_of #{@non_empty_list_msg}")
+        raise Error.new(":one_of #{@non_empty_list_msg}")
       end
     end
 
@@ -88,30 +88,30 @@ defmodule Mold.Str do
         downcased = Enum.map(one_of_ci, &String.downcase/1)
         Map.put(spec, :one_of_ci, downcased)
       else
-        raise SpecError.new(":one_of_ci #{@non_empty_list_msg}")
+        raise Error.new(":one_of_ci #{@non_empty_list_msg}")
       end
     end
 
     defp local_prep!(%Spec{regex: regex} = spec) when not is_nil(regex) do
       case regex do
         %Regex{} -> spec
-        _ -> raise SpecError.new(":regex must be a Regex")
+        _ -> raise Error.new(":regex must be a Regex")
       end
     end
 
     defp local_prep!(%Spec{min_length: min})
          when not (is_nil(min) or (is_integer(min) and min > 0)) do
-      raise SpecError.new(":min_length must be a positive integer")
+      raise Error.new(":min_length must be a positive integer")
     end
 
     defp local_prep!(%Spec{max_length: max})
          when not (is_nil(max) or (is_integer(max) and max > 0)) do
-      raise SpecError.new(":max_length must be a positive integer")
+      raise Error.new(":max_length must be a positive integer")
     end
 
     defp local_prep!(%Spec{min_length: min, max_length: max})
          when is_integer(min) and is_integer(max) and min > max do
-      raise SpecError.new(":max_length must be greater than or equal to :min_length")
+      raise Error.new(":max_length must be greater than or equal to :min_length")
     end
 
     defp local_prep!(%Spec{} = spec), do: spec

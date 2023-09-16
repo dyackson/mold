@@ -2,17 +2,17 @@ defmodule Mold.BooTest do
   use ExUnit.Case
 
   alias Mold.Boo
-  alias Mold.SpecError
+  alias Mold.Error
 
   describe "Mold.prep! a Boo" do
-    test "SpecError if nil_ok? not a boolean" do
-      assert_raise(SpecError, ":nil_ok? must be a boolean", fn ->
+    test "Error if nil_ok? not a boolean" do
+      assert_raise(Error, ":nil_ok? must be a boolean", fn ->
         Mold.prep!(%Boo{nil_ok?: "yuh"})
       end)
     end
 
-    test "SpecError if :also not a arity-1 function" do
-      assert_raise(SpecError, ":also must be an arity-1 function that returns a boolean", fn ->
+    test "Error if :also not a arity-1 function" do
+      assert_raise(Error, ":also must be an arity-1 function that returns a boolean", fn ->
         Mold.prep!(%Boo{also: &(&1 + &2)})
       end)
     end
@@ -27,11 +27,11 @@ defmodule Mold.BooTest do
   end
 
   describe "Mold.exam using Boo" do
-    test "SpecError if the spec isn't prepped" do
+    test "Error if the spec isn't prepped" do
       unprepped = %Boo{}
 
       assert_raise(
-        SpecError,
+        Error,
         "you must call Mold.prep/1 on the spec before calling Mold.exam/2",
         fn ->
           Mold.exam(unprepped, true)
@@ -63,10 +63,10 @@ defmodule Mold.BooTest do
       {:error, "dammit"} = Mold.exam(spec, "false")
     end
 
-    test "SpecError if :also doesn't return a boolean" do
+    test "Error if :also doesn't return a boolean" do
       spec = Mold.prep!(%Boo{error_message: "dammit", also: fn _ -> :some_shit end})
 
-      assert_raise(SpecError, ":also must return a boolean, but it returned :some_shit", fn ->
+      assert_raise(Error, ":also must return a boolean, but it returned :some_shit", fn ->
         Mold.exam(spec, true)
       end)
     end

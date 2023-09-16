@@ -1,6 +1,6 @@
 defmodule Mold.Rec do
   alias Mold.Common
-  alias Mold.SpecError
+  alias Mold.Error
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -57,13 +57,13 @@ defmodule Mold.Rec do
         end
 
       if is_binary(prep_error_msg) do
-        raise SpecError.new(prep_error_msg)
+        raise Error.new(prep_error_msg)
       else
         # recursively prep the nested fields on the spec
         prepped_required =
           Map.new(spec.required, fn {key, val} ->
             if not (is_binary(key) and is_spec?(val)),
-              do: raise(SpecError.new(":required " <> @spec_map_msg))
+              do: raise(Error.new(":required " <> @spec_map_msg))
 
             {key, Mold.prep!(val)}
           end)
@@ -71,7 +71,7 @@ defmodule Mold.Rec do
         prepped_optional =
           Map.new(spec.optional, fn {key, val} ->
             if not (is_binary(key) and is_spec?(val)),
-              do: raise(SpecError.new(":optional " <> @spec_map_msg))
+              do: raise(Error.new(":optional " <> @spec_map_msg))
 
             {key, Mold.prep!(val)}
           end)
@@ -87,7 +87,7 @@ defmodule Mold.Rec do
 
         if shared_keys != "" do
           raise(
-            SpecError.new(
+            Error.new(
               "the following keys were in both :optional and :required -- #{shared_keys}"
             )
           )

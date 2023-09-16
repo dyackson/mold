@@ -1,20 +1,20 @@
 defmodule Mold.DicTest do
-  alias Mold.SpecError
+  alias Mold.Error
   alias Mold.Dic
   alias Mold.Str
   alias Mold.Int
 
   use ExUnit.Case
 
-  describe "Mold.prep! a Dic raises a SpecError when the spec has bad" do
+  describe "Mold.prep! a Dic raises a Error when the spec has bad" do
     test "nil_ok?" do
-      assert_raise(SpecError, ":nil_ok? must be a boolean", fn ->
+      assert_raise(Error, ":nil_ok? must be a boolean", fn ->
         Mold.prep!(%Dic{nil_ok?: "yuh"})
       end)
     end
 
     test ":also" do
-      assert_raise(SpecError, ":also must be an arity-1 function that returns a boolean", fn ->
+      assert_raise(Error, ":also must be an arity-1 function that returns a boolean", fn ->
         Mold.prep!(%Dic{also: &(&1 + &2)})
       end)
     end
@@ -22,15 +22,15 @@ defmodule Mold.DicTest do
     test ":keys" do
       msg = ":keys must be an %Mold.Str{} or %Mold.Int{}"
 
-      assert_raise(SpecError, msg, fn ->
+      assert_raise(Error, msg, fn ->
         Mold.prep!(%Dic{})
       end)
 
-      assert_raise(SpecError, msg, fn ->
+      assert_raise(Error, msg, fn ->
         Mold.prep!(%Dic{keys: %{}})
       end)
 
-      assert_raise(SpecError, msg, fn ->
+      assert_raise(Error, msg, fn ->
         Mold.prep!(%Dic{keys: %Mold.Boo{}})
       end)
 
@@ -41,11 +41,11 @@ defmodule Mold.DicTest do
     test ":vals" do
       msg = ":vals must implement the Mold protocol"
 
-      assert_raise(SpecError, msg, fn ->
+      assert_raise(Error, msg, fn ->
         Mold.prep!(%Dic{keys: %Mold.Str{}})
       end)
 
-      assert_raise(SpecError, msg, fn ->
+      assert_raise(Error, msg, fn ->
         Mold.prep!(%Dic{keys: %Mold.Str{}, vals: %{}})
       end)
     end
@@ -53,11 +53,11 @@ defmodule Mold.DicTest do
     test ":min_size" do
       spec = %Dic{keys: %Str{}, vals: %Int{}}
 
-      assert_raise(SpecError, ":min_size must be a non-negative integer", fn ->
+      assert_raise(Error, ":min_size must be a non-negative integer", fn ->
         Mold.prep!(%{spec | min_size: -1})
       end)
 
-      assert_raise(SpecError, ":min_size must be a non-negative integer", fn ->
+      assert_raise(Error, ":min_size must be a non-negative integer", fn ->
         Mold.prep!(%{spec | min_size: "1"})
       end)
 
@@ -67,11 +67,11 @@ defmodule Mold.DicTest do
     test ":max_size" do
       spec = %Dic{keys: %Str{}, vals: %Int{}}
 
-      assert_raise(SpecError, ":max_size must be a positive integer", fn ->
+      assert_raise(Error, ":max_size must be a positive integer", fn ->
         Mold.prep!(%{spec | max_size: 0})
       end)
 
-      assert_raise(SpecError, ":max_size must be a positive integer", fn ->
+      assert_raise(Error, ":max_size must be a positive integer", fn ->
         Mold.prep!(%{spec | max_size: "5"})
       end)
 
@@ -81,7 +81,7 @@ defmodule Mold.DicTest do
     test ":min_size - :max_size combo" do
       spec = %Dic{keys: %Str{}, vals: %Int{}}
 
-      assert_raise(SpecError, ":min_size must be less than or equal to :max_size", fn ->
+      assert_raise(Error, ":min_size must be less than or equal to :max_size", fn ->
         Mold.prep!(%{spec | min_size: 3, max_size: 2})
       end)
 
@@ -115,9 +115,9 @@ defmodule Mold.DicTest do
   end
 
   describe "Mold.exam a Dic" do
-    test "SpecError if the spec isn't prepped" do
+    test "Error if the spec isn't prepped" do
       assert_raise(
-        SpecError,
+        Error,
         "you must call Mold.prep/1 on the spec before calling Mold.exam/2",
         fn ->
           Mold.exam(%Dic{}, %{"foo" => 1})

@@ -1,7 +1,7 @@
 # defmodule Mold.Lst do
 defmodule Mold.Lst do
   alias Mold.Common
-  alias Mold.SpecError
+  alias Mold.Error
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -61,10 +61,10 @@ defmodule Mold.Lst do
             nil
         end
 
-      if is_binary(length_error_msg), do: raise(SpecError.new(length_error_msg))
+      if is_binary(length_error_msg), do: raise(Error.new(length_error_msg))
 
       if not is_spec?(spec.of),
-        do: raise(SpecError.new(":of is required and must implement the Mold protocol"))
+        do: raise(Error.new(":of is required and must implement the Mold protocol"))
 
       spec = Map.put(spec, :of, Mold.prep!(spec.of))
       # add the error message to the spec

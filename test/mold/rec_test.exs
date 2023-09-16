@@ -1,25 +1,25 @@
 defmodule Mold.RecTest do
-  alias Mold.SpecError
+  alias Mold.Error
   alias Mold.Rec
 
   use ExUnit.Case
 
-  describe "Mold.prep! a Rec raises a SpecError when" do
+  describe "Mold.prep! a Rec raises a Error when" do
     test "nil_ok? not a boolean" do
-      assert_raise(SpecError, ":nil_ok? must be a boolean", fn ->
+      assert_raise(Error, ":nil_ok? must be a boolean", fn ->
         Mold.prep!(%Rec{nil_ok?: "yuh"})
       end)
     end
 
     test ":also is not an arity-1 function" do
-      assert_raise(SpecError, ":also must be an arity-1 function that returns a boolean", fn ->
+      assert_raise(Error, ":also must be an arity-1 function that returns a boolean", fn ->
         Mold.prep!(%Rec{also: &(&1 + &2)})
       end)
     end
 
     test ":exclusive? is not a boolean" do
       assert_raise(
-        SpecError,
+        Error,
         ":exclusive? must be a boolean",
         fn ->
           Mold.prep!(%Rec{exclusive?: "barf"})
@@ -29,7 +29,7 @@ defmodule Mold.RecTest do
 
     test ":exclusive? is true but no fields defined" do
       assert_raise(
-        SpecError,
+        Error,
         ":required and/or :optional must be used if :exclusive? is true",
         fn ->
           Mold.prep!(%Rec{exclusive?: true})
@@ -50,13 +50,13 @@ defmodule Mold.RecTest do
       ]
       |> Enum.each(fn bad_val ->
         assert_raise(
-          SpecError,
+          Error,
           ":optional must be a Map with string keys and Mold protocol-implementing values",
           fn -> Mold.prep!(%Rec{optional: bad_val}) end
         )
 
         assert_raise(
-          SpecError,
+          Error,
           ":required must be a Map with string keys and Mold protocol-implementing values",
           fn -> Mold.prep!(%Rec{required: bad_val}) end
         )
@@ -70,7 +70,7 @@ defmodule Mold.RecTest do
       required = Map.put(common, "d", str_spec)
 
       assert_raise(
-        SpecError,
+        Error,
         "the following keys were in both :optional and :required -- a, b",
         fn ->
           Mold.prep!(%Rec{optional: optional, required: required})
@@ -82,7 +82,7 @@ defmodule Mold.RecTest do
       bad = %{"my_str" => %Mold.Str{min_length: -1}}
 
       assert_raise(
-        SpecError,
+        Error,
         ":min_length must be a positive integer",
         fn ->
           Mold.prep!(%Rec{optional: bad})
@@ -90,7 +90,7 @@ defmodule Mold.RecTest do
       )
 
       assert_raise(
-        SpecError,
+        Error,
         ":min_length must be a positive integer",
         fn ->
           Mold.prep!(%Rec{required: bad})
@@ -136,11 +136,11 @@ defmodule Mold.RecTest do
   end
 
   describe "Mold.exam a valid Rec" do
-    test "SpecError if the spec isn't prepped" do
+    test "Error if the spec isn't prepped" do
       unprepped = %Rec{}
 
       assert_raise(
-        SpecError,
+        Error,
         "you must call Mold.prep/1 on the spec before calling Mold.exam/2",
         fn ->
           Mold.exam(unprepped, true)

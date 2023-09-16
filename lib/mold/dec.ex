@@ -1,6 +1,6 @@
 defmodule Mold.Dec do
   alias Mold.Common
-  alias Mold.SpecError
+  alias Mold.Error
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -63,7 +63,7 @@ defmodule Mold.Dec do
     defp check_max_decimal_places!(%Spec{max_decimal_places: max_decimal_places})
          when not is_nil(max_decimal_places) and
                 (not is_integer(max_decimal_places) or max_decimal_places < 0) do
-      raise SpecError.new(":max_decimal_places must be a non-negative integer")
+      raise Error.new(":max_decimal_places must be a non-negative integer")
     end
 
     defp check_max_decimal_places!(%Spec{} = spec), do: spec
@@ -79,7 +79,7 @@ defmodule Mold.Dec do
       if is_nil(val1) || is_nil(val2) do
         spec
       else
-        raise SpecError.new("cannot use both #{inspect(key1)} and #{inspect(key2)}")
+        raise Error.new("cannot use both #{inspect(key1)} and #{inspect(key2)}")
       end
     end
 
@@ -107,7 +107,7 @@ defmodule Mold.Dec do
           if Decimal.lt?(lower_v, upper_v) do
             spec
           else
-            raise SpecError.new("#{inspect(lower_k)} must be less than #{inspect(upper_k)}")
+            raise Error.new("#{inspect(lower_k)} must be less than #{inspect(upper_k)}")
           end
       end
     end
@@ -179,7 +179,7 @@ defmodule Mold.Dec do
 
       case spec_or_error do
         :error ->
-          raise SpecError.new(
+          raise Error.new(
                   "#{inspect(key)} must be a Decimal, a decimal-formatted string, or an integer"
                 )
 

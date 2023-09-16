@@ -1,51 +1,51 @@
 defmodule Mold.LstTest do
-  alias Mold.SpecError
+  alias Mold.Error
   alias Mold.Lst
   alias Mold.Str
 
   use ExUnit.Case
 
-  describe "Mold.prep! a Lst raises a SpecError when the spec has bad" do
+  describe "Mold.prep! a Lst raises a Error when the spec has bad" do
     test "nil_ok?" do
-      assert_raise(SpecError, ":nil_ok? must be a boolean", fn ->
+      assert_raise(Error, ":nil_ok? must be a boolean", fn ->
         Mold.prep!(%Lst{nil_ok?: "yuh"})
       end)
     end
 
     test ":also" do
-      assert_raise(SpecError, ":also must be an arity-1 function that returns a boolean", fn ->
+      assert_raise(Error, ":also must be an arity-1 function that returns a boolean", fn ->
         Mold.prep!(%Lst{also: &(&1 + &2)})
       end)
     end
 
     test ":min_length" do
-      assert_raise(SpecError, ":min_length must be a non-negative integer", fn ->
+      assert_raise(Error, ":min_length must be a non-negative integer", fn ->
         Mold.prep!(%Lst{min_length: -1})
       end)
 
-      assert_raise(SpecError, ":min_length must be a non-negative integer", fn ->
+      assert_raise(Error, ":min_length must be a non-negative integer", fn ->
         Mold.prep!(%Lst{min_length: "9"})
       end)
     end
 
     test ":max_length" do
-      assert_raise(SpecError, ":max_length must be a positive integer", fn ->
+      assert_raise(Error, ":max_length must be a positive integer", fn ->
         Mold.prep!(%Lst{max_length: 0})
       end)
 
-      assert_raise(SpecError, ":max_length must be a positive integer", fn ->
+      assert_raise(Error, ":max_length must be a positive integer", fn ->
         Mold.prep!(%Lst{max_length: "5"})
       end)
     end
 
     test ":min_length - :max_length combo" do
-      assert_raise(SpecError, ":min_length must be less than or equal to :max_length", fn ->
+      assert_raise(Error, ":min_length must be less than or equal to :max_length", fn ->
         Mold.prep!(%Lst{min_length: 5, max_length: 4})
       end)
     end
 
     test ":of" do
-      assert_raise(SpecError, ":of is required and must implement the Mold protocol", fn ->
+      assert_raise(Error, ":of is required and must implement the Mold protocol", fn ->
         Mold.prep!(%Lst{of: "farts"})
       end)
     end
@@ -78,9 +78,9 @@ defmodule Mold.LstTest do
   end
 
   describe "Mold.exam a Lst" do
-    test "SpecError if the spec isn't prepped" do
+    test "Error if the spec isn't prepped" do
       assert_raise(
-        SpecError,
+        Error,
         "you must call Mold.prep/1 on the spec before calling Mold.exam/2",
         fn ->
           Mold.exam(%Lst{}, true)
