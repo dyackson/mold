@@ -144,6 +144,13 @@ defmodule Mold.Str do
             "must be a string"
         end
 
+      error_message =
+        if mold.nil_ok? do
+          "if not nil, " <> error_message
+        else
+          error_message
+        end
+
       Map.put(mold, :error_message, error_message)
     end
 

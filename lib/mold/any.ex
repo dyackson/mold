@@ -1,6 +1,6 @@
 defmodule Mold.Any do
   alias Mold.Common
-  alias __MODULE__, as: Any 
+  alias __MODULE__, as: Any
 
   defstruct [
     :also,
@@ -29,9 +29,11 @@ defmodule Mold.Any do
       end
     end
 
-    defp add_error_message(%Any{error_message: error_message} = any) do
-      case error_message do
-        nil -> Map.put(any, :error_message, "must be something")
+    defp add_error_message(%Any{error_message: error_message, nil_ok?: nil_ok?} = any) do
+      case {error_message, nil_ok?} do
+        # this first case can only happen if a user supplies :also, but not :error_message
+        {nil, true} -> Map.put(any, :error_message, "invalid")
+        {nil, false} -> Map.put(any, :error_message, "must not be nil")
         _ -> any
       end
     end

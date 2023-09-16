@@ -18,7 +18,8 @@ defmodule Mold.AnyTest do
     end
 
     test "adds the default error message" do
-      assert %Any{error_message: "must be something"} = Mold.prep!(%Any{})
+      assert %Any{error_message: "must not be nil"} = Mold.prep!(%Any{})
+      assert %Any{error_message: "invalid"} = Mold.prep!(%Any{nil_ok?: true})
     end
 
     test "can use custom error message" do

@@ -90,6 +90,13 @@ defmodule Mold.Lst do
                 mold.of.error_message
           end
 
+        error_message =
+          if mold.nil_ok? do
+            "if not nil, " <> error_message
+          else
+            error_message
+          end
+
         Map.put(mold, :error_message, error_message)
       end
     end

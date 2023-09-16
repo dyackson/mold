@@ -88,6 +88,13 @@ defmodule Mold.Dic do
               "must be a mapping with at least #{min} and at most #{max} entries, " <> key_val_msg
           end
 
+        error_message =
+          if mold.nil_ok? do
+            "if not nil, " <> error_message
+          else
+            error_message
+          end
+
         Map.put(mold, :error_message, error_message)
       end
     end
