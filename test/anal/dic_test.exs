@@ -20,7 +20,7 @@ defmodule Anal.DicTest do
     end
 
     test ":keys" do
-      msg = ":keys must be an %Anal.Str{}, %Anal.Int{}, or %Anal.Dec{}"
+      msg = ":keys must be an %Anal.Str{} or %Anal.Int{}"
 
       assert_raise(SpecError, msg, fn ->
         Anal.prep!(%Dic{})
@@ -33,6 +33,9 @@ defmodule Anal.DicTest do
       assert_raise(SpecError, msg, fn ->
         Anal.prep!(%Dic{keys: %Anal.Boo{}})
       end)
+
+      assert %Dic{keys: %Str{}, vals: %Int{}}
+      assert %Dic{keys: %Int{}, vals: %Int{}}
     end
 
     test ":vals" do
@@ -180,28 +183,4 @@ defmodule Anal.DicTest do
                Anal.exam(spec, %{"foo" => 3, "bar" => true, "nut" => "wow"})
     end
   end
-
-  #   test ":max_size" do
-  #     spec = Anal.prep!(%Dic{of: %Str{}, max_size: 3, error_message: "dammit"})
-
-  #     :ok = Anal.exam(spec, ["foo", "bar"])
-  #     :ok = Anal.exam(spec, ["foo", "bar", "deez"])
-  #     {:error, "dammit"} = Anal.exam(spec, ["foo", "bar", "deez", "nuts"])
-  #   end
-
-  #   test ":of violations" do
-  #     spec = Anal.prep!(%Dic{of: %Str{error_message: "bad string"}, error_message: "dammit"})
-
-  #     {:error, %{0 => "bad string", 2 => "bad string"}} = Anal.exam(spec, [1, "bar", true])
-  #   end
-
-  #   test ":also" do
-  #     spec =
-  #       Anal.prep!(%Dic{of: %Str{}, also: &(rem(length(&1), 2) == 0), error_message: "dammit"})
-
-  #     :ok = Anal.exam(spec, ["foo", "bar"])
-  #     :ok = Anal.exam(spec, ["foo", "bar", "nuf", "sed"])
-  #     {:error, "dammit"} = Anal.exam(spec, ["foo", "bar", "nuf"])
-  #   end
-  # end
 end

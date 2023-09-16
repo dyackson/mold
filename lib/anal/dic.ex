@@ -39,8 +39,8 @@ defmodule Anal.Dic do
     defp local_prep!(%Spec{min_size: min_size, max_size: max_size} = spec) do
       prep_error_msg =
         cond do
-          !Anal.impl_for(spec.keys) || spec.keys.__struct__ not in [Anal.Str, Anal.Int, Anal.Dec] ->
-            ":keys must be an %Anal.Str{}, %Anal.Int{}, or %Anal.Dec{}"
+          !Anal.impl_for(spec.keys) || spec.keys.__struct__ not in [Anal.Str, Anal.Int] ->
+            ":keys must be an %Anal.Str{} or %Anal.Int{}"
 
           !Anal.impl_for(spec.vals) ->
             ":vals must implement the Anal protocol"
