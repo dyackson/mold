@@ -1,10 +1,10 @@
-defmodule Anal.Boo do
+defmodule Mold.Boo do
   alias __MODULE__, as: Spec
-  alias Anal.Common
+  alias Mold.Common
 
   defstruct [:error_message, :also, nil_ok?: false, __prepped__: false]
 
-  defimpl Anal do
+  defimpl Mold do
     def prep!(%Spec{} = spec) do
       spec
       |> Common.prep!()

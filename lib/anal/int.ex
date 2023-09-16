@@ -1,6 +1,6 @@
-defmodule Anal.Int do
-  alias Anal.Common
-  alias Anal.SpecError
+defmodule Mold.Int do
+  alias Mold.Common
+  alias Mold.SpecError
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -14,7 +14,7 @@ defmodule Anal.Int do
     __prepped__: false
   ]
 
-  defimpl Anal do
+  defimpl Mold do
     def prep!(%Spec{} = spec) do
       spec = Common.prep!(spec)
 
@@ -108,7 +108,7 @@ defmodule Anal.Int do
       end
     end
 
-    def add_error_message(%Anal.Int{error_message: nil} = spec) do
+    def add_error_message(%Mold.Int{error_message: nil} = spec) do
       details =
         Enum.reduce(
           [
@@ -144,6 +144,6 @@ defmodule Anal.Int do
       )
     end
 
-    def add_error_message(%Anal.Int{} = spec), do: spec
+    def add_error_message(%Mold.Int{} = spec), do: spec
   end
 end

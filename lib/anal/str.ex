@@ -1,6 +1,6 @@
-defmodule Anal.Str do
-  alias Anal.Common
-  alias Anal.SpecError
+defmodule Mold.Str do
+  alias Mold.Common
+  alias Mold.SpecError
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -15,7 +15,7 @@ defmodule Anal.Str do
     __prepped__: false
   ]
 
-  defimpl Anal do
+  defimpl Mold do
     @non_empty_list_msg "must be a non-empty list of strings"
 
     def prep!(%Spec{} = spec) do

@@ -1,4 +1,4 @@
-# defmodule Anal.Spec do
+# defmodule Mold.Spec do
 #   @base_fields [:also, :__error_message__, :get_error_message, can_be_nil: false]
 
 #   defmacro __using__(opts \\ []) do
@@ -13,34 +13,34 @@
 #     quote do
 #       @enforce_keys unquote(required_fields)
 #       defstruct unquote(fields)
-#       alias Anal.Spec
+#       alias Mold.Spec
 
 #       def new(opts \\ []) do
 #         spec = struct!(__MODULE__, opts)
 #         Spec.validate_base_fields!(spec)
 
-#         case Anal.SpecProtocol.validate_spec(spec) do
+#         case Mold.SpecProtocol.validate_spec(spec) do
 #           :ok -> spec
 #           # this gives the implementation a chance to transform the spec
 #           # used by decimal spec to cast bounds to Decimals, eg.
 #           {:ok, %__MODULE__{} = spec} -> spec
-#           {:error, reason} -> raise Anal.SpecError.new(reason)
+#           {:error, reason} -> raise Mold.SpecError.new(reason)
 #         end
 #       end
 #     end
 #   end
 
 #   def validate_base_fields!(%{can_be_nil: val}) when not is_boolean(val),
-#     do: raise(Anal.SpecError.new(":can_be_nil must be a boolean, got #{inspect(val)}"))
+#     do: raise(Mold.SpecError.new(":can_be_nil must be a boolean, got #{inspect(val)}"))
 
 #   def validate_base_fields!(%{also: also})
 #       when not is_nil(also) and not is_function(also, 1),
-#       do: raise(Anal.SpecError.new(":also must be a 1-arity function, got #{inspect(also)}"))
+#       do: raise(Mold.SpecError.new(":also must be a 1-arity function, got #{inspect(also)}"))
 
 #   def validate_base_fields!(_spec), do: :ok
 
 #   def validate(val, spec) do
-#     Anal.SpecProtocol.impl_for!(spec)
+#     Mold.SpecProtocol.impl_for!(spec)
 
 #     result =
 #       case {val, spec} do
@@ -51,7 +51,7 @@
 #           :error
 
 #         {_, _} ->
-#           with :ok <- Anal.SpecProtocol.validate_val(spec, val) do
+#           with :ok <- Mold.SpecProtocol.validate_val(spec, val) do
 #             apply_also(spec.also, val)
 #           end
 #       end
@@ -81,5 +81,5 @@
 #     end
 #   end
 
-#   def is_spec?(val), do: Anal.SpecProtocol.impl_for(val) != nil
+#   def is_spec?(val), do: Mold.SpecProtocol.impl_for(val) != nil
 # end

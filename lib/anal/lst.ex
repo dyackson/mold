@@ -1,7 +1,7 @@
-# defmodule Anal.Lst do
-defmodule Anal.Lst do
-  alias Anal.Common
-  alias Anal.SpecError
+# defmodule Mold.Lst do
+defmodule Mold.Lst do
+  alias Mold.Common
+  alias Mold.SpecError
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -14,7 +14,7 @@ defmodule Anal.Lst do
     __prepped__: false
   ]
 
-  defimpl Anal do
+  defimpl Mold do
     def prep!(%Spec{} = spec) do
       spec
       |> Common.prep!()
@@ -64,9 +64,9 @@ defmodule Anal.Lst do
       if is_binary(length_error_msg), do: raise(SpecError.new(length_error_msg))
 
       if not is_spec?(spec.of),
-        do: raise(SpecError.new(":of is required and must implement the Anal protocol"))
+        do: raise(SpecError.new(":of is required and must implement the Mold protocol"))
 
-      spec = Map.put(spec, :of, Anal.prep!(spec.of))
+      spec = Map.put(spec, :of, Mold.prep!(spec.of))
       # add the error message to the spec
       if is_binary(spec.error_message) do
         # user-supplied error message exists, use it, nothing to do
@@ -111,7 +111,7 @@ defmodule Anal.Lst do
             val
             |> Enum.with_index()
             |> Enum.reduce(%{}, fn {item, index}, acc ->
-              case Anal.exam(spec.of, item) do
+              case Mold.exam(spec.of, item) do
                 :ok -> acc
                 {:error, e} when is_binary(e) or is_map(e) -> Map.put(acc, index, e)
               end
@@ -121,6 +121,6 @@ defmodule Anal.Lst do
       end
     end
 
-    def is_spec?(val), do: Anal.impl_for(val) != nil
+    def is_spec?(val), do: Mold.impl_for(val) != nil
   end
 end

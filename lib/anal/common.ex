@@ -1,19 +1,19 @@
-defmodule Anal.Common do
+defmodule Mold.Common do
   def prep!(%{__prepped__: true} = spec), do: spec
 
   def prep!(%{nil_ok?: nil_ok?}) when not is_boolean(nil_ok?),
-    do: raise(Anal.SpecError.new(":nil_ok? must be a boolean"))
+    do: raise(Mold.SpecError.new(":nil_ok? must be a boolean"))
 
   def prep!(%{also: also})
       when not (is_nil(also) or is_function(also, 1)),
-      do: raise(Anal.SpecError.new(":also must be an arity-1 function that returns a boolean"))
+      do: raise(Mold.SpecError.new(":also must be an arity-1 function that returns a boolean"))
 
   def prep!(%{} = spec), do: spec
 
   def check_prepped!(%{} = spec) do
     if not spec.__prepped__ do
       raise(
-        Anal.SpecError.new("you must call Anal.prep/1 on the spec before calling Anal.exam/2")
+        Mold.SpecError.new("you must call Mold.prep/1 on the spec before calling Mold.exam/2")
       )
     else
       spec
@@ -35,7 +35,7 @@ defmodule Anal.Common do
         :error
 
       other ->
-        raise Anal.SpecError.new(":also must return a boolean, but it returned #{inspect(other)}")
+        raise Mold.SpecError.new(":also must return a boolean, but it returned #{inspect(other)}")
     end
   end
 end

@@ -1,4 +1,4 @@
-defmodule Anal.MixProject do
+defmodule Mold.MixProject do
   use Mix.Project
 
   def project do

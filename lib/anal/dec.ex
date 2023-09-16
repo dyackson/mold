@@ -1,6 +1,6 @@
-defmodule Anal.Dec do
-  alias Anal.Common
-  alias Anal.SpecError
+defmodule Mold.Dec do
+  alias Mold.Common
+  alias Mold.SpecError
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -15,7 +15,7 @@ defmodule Anal.Dec do
     __prepped__: false
   ]
 
-  defimpl Anal do
+  defimpl Mold do
     # not using Decimal lib to decide what's a decimal because it allows integers and scientific notation strings
     @decimal_regex ~r/^\s*-?\d*\.?\d+\s*$/
 

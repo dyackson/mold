@@ -1,6 +1,6 @@
-defmodule Anal.Dic do
-  alias Anal.Common
-  alias Anal.SpecError
+defmodule Mold.Dic do
+  alias Mold.Common
+  alias Mold.SpecError
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -14,7 +14,7 @@ defmodule Anal.Dic do
     __prepped__: false
   ]
 
-  defimpl Anal do
+  defimpl Mold do
     def prep!(%Spec{} = spec) do
       spec
       |> Common.prep!()
@@ -39,11 +39,11 @@ defmodule Anal.Dic do
     defp local_prep!(%Spec{min_size: min_size, max_size: max_size} = spec) do
       prep_error_msg =
         cond do
-          !Anal.impl_for(spec.keys) || spec.keys.__struct__ not in [Anal.Str, Anal.Int] ->
-            ":keys must be an %Anal.Str{} or %Anal.Int{}"
+          !Mold.impl_for(spec.keys) || spec.keys.__struct__ not in [Mold.Str, Mold.Int] ->
+            ":keys must be an %Mold.Str{} or %Mold.Int{}"
 
-          !Anal.impl_for(spec.vals) ->
-            ":vals must implement the Anal protocol"
+          !Mold.impl_for(spec.vals) ->
+            ":vals must implement the Mold protocol"
 
           not (is_nil(min_size) || (is_integer(min_size) and min_size >= 0)) ->
             ":min_size must be a non-negative integer"
@@ -62,8 +62,8 @@ defmodule Anal.Dic do
 
       spec =
         spec
-        |> Map.update!(:keys, &Anal.prep!/1)
-        |> Map.update!(:vals, &Anal.prep!/1)
+        |> Map.update!(:keys, &Mold.prep!/1)
+        |> Map.update!(:vals, &Mold.prep!/1)
 
       if is_binary(spec.error_message) do
         # user-supplied error message exists, use nothing to do
@@ -107,13 +107,13 @@ defmodule Anal.Dic do
         Enum.reduce(val, {%{}, []}, fn
           {key, val}, {nested_errors, bad_keys} = _acc ->
             bad_keys =
-              case Anal.exam(spec.keys, key) do
+              case Mold.exam(spec.keys, key) do
                 {:error, _msg} -> [key | bad_keys]
                 :ok -> bad_keys
               end
 
             nested_errors =
-              case Anal.exam(spec.vals, val) do
+              case Mold.exam(spec.vals, val) do
                 {:error, error} -> Map.put(nested_errors, key, error)
                 :ok -> nested_errors
               end

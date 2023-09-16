@@ -1,8 +1,8 @@
-# defmodule AnalTest do
+# defmodule MoldTest do
 #   use ExUnit.Case
-#   doctest Anal
+#   doctest Mold
 
 #   test "greets the world" do
-#     assert Anal.hello() == :world
+#     assert Mold.hello() == :world
 #   end
 # end

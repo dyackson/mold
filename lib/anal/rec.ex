@@ -1,6 +1,6 @@
-defmodule Anal.Rec do
-  alias Anal.Common
-  alias Anal.SpecError
+defmodule Mold.Rec do
+  alias Mold.Common
+  alias Mold.SpecError
   alias __MODULE__, as: Spec
 
   defstruct [
@@ -13,8 +13,8 @@ defmodule Anal.Rec do
     __prepped__: false
   ]
 
-  defimpl Anal do
-    @spec_map_msg "must be a Map with string keys and Anal protocol-implementing values"
+  defimpl Mold do
+    @spec_map_msg "must be a Map with string keys and Mold protocol-implementing values"
 
     def prep!(%Spec{} = spec) do
       spec
@@ -65,7 +65,7 @@ defmodule Anal.Rec do
             if not (is_binary(key) and is_spec?(val)),
               do: raise(SpecError.new(":required " <> @spec_map_msg))
 
-            {key, Anal.prep!(val)}
+            {key, Mold.prep!(val)}
           end)
 
         prepped_optional =
@@ -73,7 +73,7 @@ defmodule Anal.Rec do
             if not (is_binary(key) and is_spec?(val)),
               do: raise(SpecError.new(":optional " <> @spec_map_msg))
 
-            {key, Anal.prep!(val)}
+            {key, Mold.prep!(val)}
           end)
 
         spec = Map.merge(spec, %{required: prepped_required, optional: prepped_optional})
@@ -174,7 +174,7 @@ defmodule Anal.Rec do
           missing? = Map.has_key?(missing, key)
 
           # recurse if the field is spec'd and present
-          result = if spec == nil or missing?, do: :ok, else: Anal.exam(spec, val)
+          result = if spec == nil or missing?, do: :ok, else: Mold.exam(spec, val)
 
           case result do
             :ok ->
@@ -188,6 +188,6 @@ defmodule Anal.Rec do
       if errors_by_field == %{}, do: :ok, else: {:error, errors_by_field}
     end
 
-    def is_spec?(val), do: Anal.impl_for(val) != nil
+    def is_spec?(val), do: Mold.impl_for(val) != nil
   end
 end
