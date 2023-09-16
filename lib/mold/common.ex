@@ -4,9 +4,9 @@ defmodule Mold.Common do
   def prep!(%{nil_ok?: nil_ok?}) when not is_boolean(nil_ok?),
     do: raise(Mold.Error.new(":nil_ok? must be a boolean"))
 
-  def prep!(%{also: also})
-      when not (is_nil(also) or is_function(also, 1)),
-      do: raise(Mold.Error.new(":also must be an arity-1 function that returns a boolean"))
+  def prep!(%{but: but})
+      when not (is_nil(but) or is_function(but, 1)),
+      do: raise(Mold.Error.new(":but must be an arity-1 function that returns a boolean"))
 
   def prep!(%{} = mold), do: mold
 
@@ -22,10 +22,10 @@ defmodule Mold.Common do
   def exam_nil(%{nil_ok?: true}, nil), do: :ok
   def exam_nil(%{}, _), do: :not_nil
 
-  def apply_also(%{also: nil}, _val), do: :ok
+  def apply_but(%{but: nil}, _val), do: :ok
 
-  def apply_also(%{also: also}, val) do
-    case also.(val) do
+  def apply_but(%{but: but}, val) do
+    case but.(val) do
       true ->
         :ok
 
@@ -33,7 +33,7 @@ defmodule Mold.Common do
         :error
 
       other ->
-        raise Mold.Error.new(":also must return a boolean, but it returned #{inspect(other)}")
+        raise Mold.Error.new(":but must return a boolean, but it returned #{inspect(other)}")
     end
   end
 end

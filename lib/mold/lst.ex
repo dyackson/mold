@@ -5,7 +5,7 @@ defmodule Mold.Lst do
   alias __MODULE__, as: Lst
 
   defstruct [
-    :also,
+    :but,
     :error_message,
     :of,
     :min_length,
@@ -35,7 +35,7 @@ defmodule Mold.Lst do
         _ ->
           # check the non-nil value with the mold
           with :ok <- local_exam(mold, val),
-               :ok <- Common.apply_also(mold, val) do
+               :ok <- Common.apply_but(mold, val) do
             :ok
           else
             :error -> {:error, mold.error_message}

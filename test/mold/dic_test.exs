@@ -13,9 +13,9 @@ defmodule Mold.DicTest do
       end)
     end
 
-    test ":also" do
-      assert_raise(Error, ":also must be an arity-1 function that returns a boolean", fn ->
-        Mold.prep!(%Dic{also: &(&1 + &2)})
+    test ":but" do
+      assert_raise(Error, ":but must be an arity-1 function that returns a boolean", fn ->
+        Mold.prep!(%Dic{but: &(&1 + &2)})
       end)
     end
 

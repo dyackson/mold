@@ -3,7 +3,7 @@ defmodule Mold.Any do
   alias __MODULE__, as: Any
 
   defstruct [
-    :also,
+    :but,
     :error_message,
     nil_ok?: false,
     __prepped__: false
@@ -21,7 +21,7 @@ defmodule Mold.Any do
       any = Common.check_prepped!(any)
 
       with :not_nil <- Common.exam_nil(any, val),
-           :ok <- Common.apply_also(any, val) do
+           :ok <- Common.apply_but(any, val) do
         :ok
       else
         :ok -> :ok
@@ -31,7 +31,7 @@ defmodule Mold.Any do
 
     defp add_error_message(%Any{error_message: error_message, nil_ok?: nil_ok?} = any) do
       case {error_message, nil_ok?} do
-        # this first case can only happen if a user supplies :also, but not :error_message
+        # this first case can only happen if a user supplies :but, but not :error_message
         {nil, true} -> Map.put(any, :error_message, "invalid")
         {nil, false} -> Map.put(any, :error_message, "must not be nil")
         _ -> any

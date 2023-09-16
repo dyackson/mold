@@ -11,9 +11,9 @@ defmodule Mold.DecTest do
       end)
     end
 
-    test ":also is not an arity-1 function" do
-      assert_raise(Error, ":also must be an arity-1 function that returns a boolean", fn ->
-        Mold.prep!(%Dec{also: &(&1 + &2)})
+    test ":but is not an arity-1 function" do
+      assert_raise(Error, ":but must be an arity-1 function that returns a boolean", fn ->
+        Mold.prep!(%Dec{but: &(&1 + &2)})
       end)
     end
 
@@ -155,17 +155,17 @@ defmodule Mold.DecTest do
       |> Enum.each(&assert {:error, "wrong"} = Mold.exam(mold, &1))
     end
 
-    test "takes an :also function" do
-      mold = Mold.prep!(%Dec{error_message: "wrong", also: &String.contains?(&1, "3")})
+    test "takes an :but function" do
+      mold = Mold.prep!(%Dec{error_message: "wrong", but: &String.contains?(&1, "3")})
 
       :ok = Mold.exam(mold, "2.30")
       {:error, "wrong"} = Mold.exam(mold, "2.22")
     end
 
-    test "Error if :also doesn't return a boolean" do
-      mold = Mold.prep!(%Dec{error_message: "wrong", also: fn _ -> :poo end})
+    test "Error if :but doesn't return a boolean" do
+      mold = Mold.prep!(%Dec{error_message: "wrong", but: fn _ -> :poo end})
 
-      assert_raise(Error, ":also must return a boolean, but it returned :poo", fn ->
+      assert_raise(Error, ":but must return a boolean, but it returned :poo", fn ->
         Mold.exam(mold, "1.1")
       end)
     end

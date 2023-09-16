@@ -4,7 +4,7 @@ defmodule Mold.Dic do
   alias __MODULE__, as: Dic
 
   defstruct [
-    :also,
+    :but,
     :error_message,
     :keys,
     :vals,
@@ -27,7 +27,7 @@ defmodule Mold.Dic do
 
       with :not_nil <- Common.exam_nil(mold, val),
            :ok <- local_exam(mold, val),
-           :ok <- Common.apply_also(mold, val) do
+           :ok <- Common.apply_but(mold, val) do
         :ok
       else
         :ok -> :ok

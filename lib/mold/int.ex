@@ -8,7 +8,7 @@ defmodule Mold.Int do
     :lt,
     :gte,
     :lte,
-    :also,
+    :but,
     :error_message,
     nil_ok?: false,
     __prepped__: false
@@ -88,7 +88,7 @@ defmodule Mold.Int do
         _ ->
           # check the non-nil value with the mold
           with :ok <- local_exam(mold, val),
-               :ok <- Common.apply_also(mold, val) do
+               :ok <- Common.apply_but(mold, val) do
             :ok
           else
             :error -> {:error, mold.error_message}

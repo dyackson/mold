@@ -2,7 +2,7 @@ defmodule Mold.Boo do
   alias __MODULE__, as: Boo
   alias Mold.Common
 
-  defstruct [:error_message, :also, nil_ok?: false, __prepped__: false]
+  defstruct [:error_message, :but, nil_ok?: false, __prepped__: false]
 
   defimpl Mold do
     def prep!(%Boo{} = mold) do
@@ -17,7 +17,7 @@ defmodule Mold.Boo do
 
       with :not_nil <- Common.exam_nil(mold, val),
            :ok <- local_exam(mold, val),
-           :ok <- Common.apply_also(mold, val) do
+           :ok <- Common.apply_but(mold, val) do
         :ok
       else
         :ok -> :ok

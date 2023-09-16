@@ -12,9 +12,9 @@ defmodule Mold.LstTest do
       end)
     end
 
-    test ":also" do
-      assert_raise(Error, ":also must be an arity-1 function that returns a boolean", fn ->
-        Mold.prep!(%Lst{also: &(&1 + &2)})
+    test ":but" do
+      assert_raise(Error, ":but must be an arity-1 function that returns a boolean", fn ->
+        Mold.prep!(%Lst{but: &(&1 + &2)})
       end)
     end
 
@@ -126,9 +126,9 @@ defmodule Mold.LstTest do
       {:error, %{0 => "bad string", 2 => "bad string"}} = Mold.exam(mold, [1, "bar", true])
     end
 
-    test ":also" do
+    test ":but" do
       mold =
-        Mold.prep!(%Lst{of: %Str{}, also: &(rem(length(&1), 2) == 0), error_message: "wrong"})
+        Mold.prep!(%Lst{of: %Str{}, but: &(rem(length(&1), 2) == 0), error_message: "wrong"})
 
       :ok = Mold.exam(mold, ["foo", "bar"])
       :ok = Mold.exam(mold, ["foo", "bar", "nuf", "sed"])

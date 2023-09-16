@@ -11,9 +11,9 @@ defmodule Mold.BooTest do
       end)
     end
 
-    test "Error if :also not a arity-1 function" do
-      assert_raise(Error, ":also must be an arity-1 function that returns a boolean", fn ->
-        Mold.prep!(%Boo{also: &(&1 + &2)})
+    test "Error if :but not a arity-1 function" do
+      assert_raise(Error, ":but must be an arity-1 function that returns a boolean", fn ->
+        Mold.prep!(%Boo{but: &(&1 + &2)})
       end)
     end
 
@@ -55,18 +55,18 @@ defmodule Mold.BooTest do
       {:error, "wrong"} = Mold.exam(mold, "no")
     end
 
-    test "can use a mold with an :also function" do
+    test "can use a mold with an :but function" do
       # why you'd do this, who knows?
-      mold = Mold.prep!(%Boo{error_message: "wrong", also: &(&1 == true)})
+      mold = Mold.prep!(%Boo{error_message: "wrong", but: &(&1 == true)})
 
       :ok = Mold.exam(mold, true)
       {:error, "wrong"} = Mold.exam(mold, "false")
     end
 
-    test "Error if :also doesn't return a boolean" do
-      mold = Mold.prep!(%Boo{error_message: "wrong", also: fn _ -> :poo end})
+    test "Error if :but doesn't return a boolean" do
+      mold = Mold.prep!(%Boo{error_message: "wrong", but: fn _ -> :poo end})
 
-      assert_raise(Error, ":also must return a boolean, but it returned :poo", fn ->
+      assert_raise(Error, ":but must return a boolean, but it returned :poo", fn ->
         Mold.exam(mold, true)
       end)
     end

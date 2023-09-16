@@ -9,7 +9,7 @@ defmodule Mold.Str do
     :one_of_ci,
     :min_length,
     :max_length,
-    :also,
+    :but,
     :error_message,
     nil_ok?: false,
     __prepped__: false
@@ -31,7 +31,7 @@ defmodule Mold.Str do
 
       with :not_nil <- Common.exam_nil(mold, val),
            :ok <- local_exam(mold, val),
-           :ok <- Common.apply_also(mold, val) do
+           :ok <- Common.apply_but(mold, val) do
         :ok
       else
         :ok -> :ok

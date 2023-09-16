@@ -11,9 +11,9 @@ defmodule Mold.RecTest do
       end)
     end
 
-    test ":also is not an arity-1 function" do
-      assert_raise(Error, ":also must be an arity-1 function that returns a boolean", fn ->
-        Mold.prep!(%Rec{also: &(&1 + &2)})
+    test ":but is not an arity-1 function" do
+      assert_raise(Error, ":but must be an arity-1 function that returns a boolean", fn ->
+        Mold.prep!(%Rec{but: &(&1 + &2)})
       end)
     end
 

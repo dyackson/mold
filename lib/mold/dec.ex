@@ -9,7 +9,7 @@ defmodule Mold.Dec do
     :gte,
     :lte,
     :max_decimal_places,
-    :also,
+    :but,
     :error_message,
     nil_ok?: false,
     __prepped__: false
@@ -39,7 +39,7 @@ defmodule Mold.Dec do
 
       with :not_nil <- Common.exam_nil(mold, val),
            :ok <- local_exam(mold, val),
-           :ok <- Common.apply_also(mold, val) do
+           :ok <- Common.apply_but(mold, val) do
         :ok
       else
         :ok -> :ok
