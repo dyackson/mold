@@ -108,9 +108,9 @@ defmodule Mold.DicTest do
     end
 
     test "accepts an error message" do
-      mold = %Dic{keys: %Str{}, vals: %Int{}, error_message: "dammit"}
+      mold = %Dic{keys: %Str{}, vals: %Int{}, error_message: "wrong"}
 
-      assert Mold.prep!(mold).error_message == "dammit"
+      assert Mold.prep!(mold).error_message == "wrong"
     end
   end
 
@@ -126,38 +126,38 @@ defmodule Mold.DicTest do
     end
 
     test "allows nil iff nil_ok?" do
-      nil_not_ok_mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, error_message: "dammit"})
+      nil_not_ok_mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, error_message: "wrong"})
       nil_ok_mold = %{nil_not_ok_mold | nil_ok?: true}
 
       :ok = Mold.exam(nil_ok_mold, nil)
-      {:error, "dammit"} = Mold.exam(nil_not_ok_mold, nil)
+      {:error, "wrong"} = Mold.exam(nil_not_ok_mold, nil)
     end
 
     test "error if not a map" do
-      mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, error_message: "dammit"})
+      mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, error_message: "wrong"})
 
-      {:error, "dammit"} = Mold.exam(mold, 5)
-      {:error, "dammit"} = Mold.exam(mold, [])
-      {:error, "dammit"} = Mold.exam(mold, "foo")
+      {:error, "wrong"} = Mold.exam(mold, 5)
+      {:error, "wrong"} = Mold.exam(mold, [])
+      {:error, "wrong"} = Mold.exam(mold, "foo")
 
       :ok = Mold.exam(mold, %{})
       :ok = Mold.exam(mold, %{"foo" => 5, "bar" => 9})
     end
 
     test ":min_size" do
-      mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, min_size: 2, error_message: "dammit"})
+      mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, min_size: 2, error_message: "wrong"})
 
       :ok = Mold.exam(mold, %{"foo" => 5, "bar" => 9})
       :ok = Mold.exam(mold, %{"foo" => 5, "bar" => 9, "fud" => 8})
-      {:error, "dammit"} = Mold.exam(mold, %{"foo" => 5})
+      {:error, "wrong"} = Mold.exam(mold, %{"foo" => 5})
     end
 
     test ":max_size" do
-      mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, max_size: 2, error_message: "dammit"})
+      mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, max_size: 2, error_message: "wrong"})
 
       :ok = Mold.exam(mold, %{"foo" => 5})
       :ok = Mold.exam(mold, %{"foo" => 5, "bar" => 9})
-      {:error, "dammit"} = Mold.exam(mold, %{"foo" => 5, "bar" => 2, "elf" => 8})
+      {:error, "wrong"} = Mold.exam(mold, %{"foo" => 5, "bar" => 2, "elf" => 8})
     end
 
     test ":bad keys" do

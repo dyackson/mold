@@ -97,7 +97,7 @@ defmodule Mold.IntTest do
     end
 
     test "can use custom error message" do
-      assert %Int{error_message: "dammit"} = Mold.prep!(%Int{error_message: "dammit"})
+      assert %Int{error_message: "wrong"} = Mold.prep!(%Int{error_message: "wrong"})
     end
   end
 
@@ -116,63 +116,63 @@ defmodule Mold.IntTest do
 
     test "allows nil iff nil_ok?" do
       nil_ok_mold = Mold.prep!(%Int{nil_ok?: true})
-      nil_not_ok_mold = Mold.prep!(%Int{error_message: "dammit"})
+      nil_not_ok_mold = Mold.prep!(%Int{error_message: "wrong"})
 
       :ok = Mold.exam(nil_ok_mold, nil)
-      {:error, "dammit"} = Mold.exam(nil_not_ok_mold, nil)
+      {:error, "wrong"} = Mold.exam(nil_not_ok_mold, nil)
     end
 
     test "fail if not an integer" do
-      mold = Mold.prep!(%Int{error_message: "dammit"})
+      mold = Mold.prep!(%Int{error_message: "wrong"})
       [1, -1] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
 
       ["1", true, "bla", Decimal.new(1)]
-      |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
+      |> Enum.each(&assert {:error, "wrong"} = Mold.exam(mold, &1))
     end
 
     test "takes an :also function" do
-      mold = Mold.prep!(%Int{error_message: "dammit", also: &Integer.is_even/1})
+      mold = Mold.prep!(%Int{error_message: "wrong", also: &Integer.is_even/1})
 
       :ok = Mold.exam(mold, 4)
-      {:error, "dammit"} = Mold.exam(mold, 5)
+      {:error, "wrong"} = Mold.exam(mold, 5)
     end
 
     test "Error if :also doesn't return a boolean" do
-      mold = Mold.prep!(%Int{error_message: "dammit", also: fn _ -> :some_shit end})
+      mold = Mold.prep!(%Int{error_message: "wrong", also: fn _ -> :poo end})
 
-      assert_raise(Error, ":also must return a boolean, but it returned :some_shit", fn ->
+      assert_raise(Error, ":also must return a boolean, but it returned :poo", fn ->
         Mold.exam(mold, 1)
       end)
     end
 
     test "checks :gt" do
-      mold = Mold.prep!(%Int{gt: 2, error_message: "dammit"})
+      mold = Mold.prep!(%Int{gt: 2, error_message: "wrong"})
       assert :ok = Mold.exam(mold, 3)
-      [1, 2] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
+      [1, 2] |> Enum.each(&assert {:error, "wrong"} = Mold.exam(mold, &1))
     end
 
     test "checks :gte" do
-      mold = Mold.prep!(%Int{gte: 2, error_message: "dammit"})
+      mold = Mold.prep!(%Int{gte: 2, error_message: "wrong"})
       [2, 3] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
-      assert {:error, "dammit"} = Mold.exam(mold, 1)
+      assert {:error, "wrong"} = Mold.exam(mold, 1)
     end
 
     test "checks :lt" do
-      mold = Mold.prep!(%Int{lt: 2, error_message: "dammit"})
+      mold = Mold.prep!(%Int{lt: 2, error_message: "wrong"})
       assert :ok = Mold.exam(mold, 1)
-      [2, 3] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
+      [2, 3] |> Enum.each(&assert {:error, "wrong"} = Mold.exam(mold, &1))
     end
 
     test "checks :lte" do
-      mold = Mold.prep!(%Int{lte: 2, error_message: "dammit"})
+      mold = Mold.prep!(%Int{lte: 2, error_message: "wrong"})
       [1, 2] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
-      assert {:error, "dammit"} = Mold.exam(mold, 3)
+      assert {:error, "wrong"} = Mold.exam(mold, 3)
     end
 
     test "checks both an upper and lower bound" do
-      mold = Mold.prep!(%Int{gte: 5, lt: 10, error_message: "dammit"})
+      mold = Mold.prep!(%Int{gte: 5, lt: 10, error_message: "wrong"})
       [5, 9] |> Enum.each(&assert :ok = Mold.exam(mold, &1))
-      [4, 11] |> Enum.each(&assert {:error, "dammit"} = Mold.exam(mold, &1))
+      [4, 11] |> Enum.each(&assert {:error, "wrong"} = Mold.exam(mold, &1))
     end
   end
 end

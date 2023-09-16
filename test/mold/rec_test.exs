@@ -131,7 +131,7 @@ defmodule Mold.RecTest do
     end
 
     test "accepts an error message" do
-      assert %Rec{error_message: "dammit"} = Mold.prep!(%Rec{error_message: "dammit"})
+      assert %Rec{error_message: "wrong"} = Mold.prep!(%Rec{error_message: "wrong"})
     end
   end
 
@@ -150,14 +150,14 @@ defmodule Mold.RecTest do
 
     test "allows nil iff nil_ok?" do
       nil_ok_mold = Mold.prep!(%Rec{nil_ok?: true})
-      nil_not_ok_mold = Mold.prep!(%Rec{error_message: "dammit"})
+      nil_not_ok_mold = Mold.prep!(%Rec{error_message: "wrong"})
 
       :ok = Mold.exam(nil_ok_mold, nil)
-      {:error, "dammit"} = Mold.exam(nil_not_ok_mold, nil)
+      {:error, "wrong"} = Mold.exam(nil_not_ok_mold, nil)
     end
 
     test "error if not a map" do
-      mold = Mold.prep!(%Rec{error_message: "dammit"})
+      mold = Mold.prep!(%Rec{error_message: "wrong"})
 
       [
         true,
@@ -167,7 +167,7 @@ defmodule Mold.RecTest do
         {}
       ]
       |> Enum.each(fn val ->
-        assert {:error, "dammit"} = Mold.exam(mold, val)
+        assert {:error, "wrong"} = Mold.exam(mold, val)
       end)
 
       assert :ok = Mold.exam(mold, %{})
@@ -186,7 +186,7 @@ defmodule Mold.RecTest do
       # required = %{"rs" => %Mold.Str{}, "rb" => %Mold.Boo{}}
       optional = %{"os" => %Mold.Str{}, "ob" => %Mold.Boo{}}
 
-      mold = Mold.prep!(%Rec{optional: optional, error_message: "dammit"})
+      mold = Mold.prep!(%Rec{optional: optional, error_message: "wrong"})
 
       :ok = Mold.exam(mold, %{"rs" => "foo", "rb" => true})
       :ok = Mold.exam(mold, %{"rb" => true})
@@ -197,7 +197,7 @@ defmodule Mold.RecTest do
       required = %{"r" => %Mold.Str{}}
       optional = %{"o" => %Mold.Str{}}
 
-      mold = Mold.prep!(%Rec{required: required, optional: optional, error_message: "dammit"})
+      mold = Mold.prep!(%Rec{required: required, optional: optional, error_message: "wrong"})
       exclusive_mold = Map.put(mold, :exclusive?, true)
 
       assert :ok = Mold.exam(mold, %{"r" => "foo", "other" => "thing"})

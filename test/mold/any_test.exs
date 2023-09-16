@@ -22,7 +22,7 @@ defmodule Mold.AnyTest do
     end
 
     test "can use custom error message" do
-      assert %Any{error_message: "dammit"} = Mold.prep!(%Any{error_message: "dammit"})
+      assert %Any{error_message: "wrong"} = Mold.prep!(%Any{error_message: "wrong"})
     end
   end
 
@@ -41,14 +41,14 @@ defmodule Mold.AnyTest do
 
     test "allows nil iff nil_ok?" do
       nil_ok_mold = Mold.prep!(%Any{nil_ok?: true})
-      nil_not_ok_mold = Mold.prep!(%Any{error_message: "dammit"})
+      nil_not_ok_mold = Mold.prep!(%Any{error_message: "wrong"})
 
       :ok = Mold.exam(nil_ok_mold, nil)
-      {:error, "dammit"} = Mold.exam(nil_not_ok_mold, nil)
+      {:error, "wrong"} = Mold.exam(nil_not_ok_mold, nil)
     end
 
     test "allows anything" do
-      mold = Mold.prep!(%Any{error_message: "dammit"})
+      mold = Mold.prep!(%Any{error_message: "wrong"})
 
       :ok = Mold.exam(mold, true)
       :ok = Mold.exam(mold, "yay")
@@ -56,16 +56,16 @@ defmodule Mold.AnyTest do
     end
 
     test "can use a mold with an :also function" do
-      mold = Mold.prep!(%Any{error_message: "dammit", also: &(&1 != "")})
+      mold = Mold.prep!(%Any{error_message: "wrong", also: &(&1 != "")})
 
       :ok = Mold.exam(mold, "x")
-      {:error, "dammit"} = Mold.exam(mold, "")
+      {:error, "wrong"} = Mold.exam(mold, "")
     end
 
     test "Error if :also doesn't return a boolean" do
-      mold = Mold.prep!(%Any{error_message: "dammit", also: fn _ -> :woops end})
+      mold = Mold.prep!(%Any{error_message: "wrong", also: fn _ -> :poo end})
 
-      assert_raise(Error, ":also must return a boolean, but it returned :woops", fn ->
+      assert_raise(Error, ":also must return a boolean, but it returned :poo", fn ->
         Mold.exam(mold, true)
       end)
     end

@@ -73,7 +73,7 @@ defmodule Mold.LstTest do
     end
 
     test "accepts an error message" do
-      assert %Lst{error_message: "dammit"} = Mold.prep!(%Lst{of: %Str{}, error_message: "dammit"})
+      assert %Lst{error_message: "wrong"} = Mold.prep!(%Lst{of: %Str{}, error_message: "wrong"})
     end
   end
 
@@ -89,50 +89,50 @@ defmodule Mold.LstTest do
     end
 
     test "allows nil iff nil_ok?" do
-      nil_not_ok_mold = Mold.prep!(%Lst{of: %Str{}, error_message: "dammit"})
+      nil_not_ok_mold = Mold.prep!(%Lst{of: %Str{}, error_message: "wrong"})
       nil_ok_mold = %Lst{nil_not_ok_mold | nil_ok?: true}
 
       :ok = Mold.exam(nil_ok_mold, nil)
-      {:error, "dammit"} = Mold.exam(nil_not_ok_mold, nil)
+      {:error, "wrong"} = Mold.exam(nil_not_ok_mold, nil)
     end
 
     test "error if not a list" do
-      mold = Mold.prep!(%Lst{of: %Str{}, error_message: "dammit"})
+      mold = Mold.prep!(%Lst{of: %Str{}, error_message: "wrong"})
 
-      {:error, "dammit"} = Mold.exam(mold, 5)
-      {:error, "dammit"} = Mold.exam(mold, %{})
-      {:error, "dammit"} = Mold.exam(mold, "foo")
+      {:error, "wrong"} = Mold.exam(mold, 5)
+      {:error, "wrong"} = Mold.exam(mold, %{})
+      {:error, "wrong"} = Mold.exam(mold, "foo")
     end
 
     test ":min_length" do
-      mold = Mold.prep!(%Lst{of: %Str{}, min_length: 2, error_message: "dammit"})
+      mold = Mold.prep!(%Lst{of: %Str{}, min_length: 2, error_message: "wrong"})
 
       :ok = Mold.exam(mold, ["foo", "bar"])
       :ok = Mold.exam(mold, ["foo", "bar", "deez"])
-      {:error, "dammit"} = Mold.exam(mold, ["foo"])
+      {:error, "wrong"} = Mold.exam(mold, ["foo"])
     end
 
     test ":max_length" do
-      mold = Mold.prep!(%Lst{of: %Str{}, max_length: 3, error_message: "dammit"})
+      mold = Mold.prep!(%Lst{of: %Str{}, max_length: 3, error_message: "wrong"})
 
       :ok = Mold.exam(mold, ["foo", "bar"])
       :ok = Mold.exam(mold, ["foo", "bar", "deez"])
-      {:error, "dammit"} = Mold.exam(mold, ["foo", "bar", "deez", "nuts"])
+      {:error, "wrong"} = Mold.exam(mold, ["foo", "bar", "deez", "nuts"])
     end
 
     test ":of violations" do
-      mold = Mold.prep!(%Lst{of: %Str{error_message: "bad string"}, error_message: "dammit"})
+      mold = Mold.prep!(%Lst{of: %Str{error_message: "bad string"}, error_message: "wrong"})
 
       {:error, %{0 => "bad string", 2 => "bad string"}} = Mold.exam(mold, [1, "bar", true])
     end
 
     test ":also" do
       mold =
-        Mold.prep!(%Lst{of: %Str{}, also: &(rem(length(&1), 2) == 0), error_message: "dammit"})
+        Mold.prep!(%Lst{of: %Str{}, also: &(rem(length(&1), 2) == 0), error_message: "wrong"})
 
       :ok = Mold.exam(mold, ["foo", "bar"])
       :ok = Mold.exam(mold, ["foo", "bar", "nuf", "sed"])
-      {:error, "dammit"} = Mold.exam(mold, ["foo", "bar", "nuf"])
+      {:error, "wrong"} = Mold.exam(mold, ["foo", "bar", "nuf"])
     end
   end
 end
