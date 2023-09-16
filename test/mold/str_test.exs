@@ -89,6 +89,7 @@ defmodule Mold.StrTest do
   describe "Mold.prep!/1 a valid Int" do
     test "adds a default error message" do
       assert %Str{error_message: "must be a string"} = Mold.prep!(%Str{})
+      assert %Str{error_message: "if not nil, must be a string"} = Mold.prep!(%Str{nil_ok?: true})
 
       assert %Str{
                error_message:

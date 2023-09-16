@@ -112,10 +112,17 @@ defmodule Mold.DecTest do
                  "must be a decimal-formatted string greater than 5.5 and less than or equal to 20"
              } = Mold.prep!(%Dec{gt: "5.5", lte: 20})
 
+      mold = %Dec{gt: "5.5", lte: 20, max_decimal_places: 10}
+
       assert %Dec{
                error_message:
-                 "must be a decimal-formatted string with up to 10 decimal places, greater than 5.5, and less than or equal to 20"
-             } = Mold.prep!(%Dec{gt: "5.5", lte: 20, max_decimal_places: 10})
+                 "must be a decimal-formatted string with up to 10 decimal places, greater than 5.5, and less than or equal to 20" =
+                   msg
+             } = Mold.prep!(mold)
+
+      nil_ok_msg = "if not nil, " <> msg
+
+      assert %Dec{error_message: ^nil_ok_msg} = Mold.prep!(Map.put(mold, :nil_ok?, true))
     end
 
     test "can use custom error message" do

@@ -19,6 +19,9 @@ defmodule Mold.BooTest do
 
     test "adds the default error message" do
       assert %Boo{error_message: "must be a boolean"} = Mold.prep!(%Boo{})
+
+      assert %Boo{error_message: "if not nil, must be a boolean"} =
+               Mold.prep!(%Boo{nil_ok?: true})
     end
 
     test "can use custom error message" do

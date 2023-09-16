@@ -57,6 +57,11 @@ defmodule Mold.LstTest do
                Mold.prep!(%Lst{of: %Str{}})
 
       assert %Lst{
+               error_message: "if not nil, must be a list in which each element must be a string"
+             } =
+               Mold.prep!(%Lst{of: %Str{}, nil_ok?: true})
+
+      assert %Lst{
                error_message:
                  "must be a list with at least 5 elements, each of which must be a string"
              } = Mold.prep!(%Lst{of: %Str{}, min_length: 5})

@@ -97,6 +97,9 @@ defmodule Mold.DicTest do
       assert Mold.prep!(mold).error_message ==
                "must be a mapping where each key must be a string, and each value must be an integer"
 
+      assert Mold.prep!(%{mold | nil_ok?: true}).error_message ==
+               "if not nil, must be a mapping where each key must be a string, and each value must be an integer"
+
       assert Mold.prep!(%{mold | min_size: 5}).error_message ==
                "must be a mapping with at least 5 entries, where each key must be a string, and each value must be an integer"
 

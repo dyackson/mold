@@ -103,6 +103,7 @@ defmodule Mold.RecTest do
     @tag :it
     test "adds a default error message" do
       assert %Rec{error_message: "must be a record"} = Mold.prep!(%Rec{})
+      assert %Rec{error_message: "if not nil, must be a record"} = Mold.prep!(%Rec{nil_ok?: true})
 
       required = %{"r1" => %Mold.Str{}, "r2" => %Mold.Boo{}}
       optional = %{"o1" => %Mold.Str{}, "o2" => %Mold.Boo{}}
