@@ -12,9 +12,7 @@ defmodule Mold.Common do
 
   def check_prepped!(%{} = spec) do
     if not spec.__prepped__ do
-      raise(
-        Mold.Error.new("you must call Mold.prep/1 on the spec before calling Mold.exam/2")
-      )
+      raise(Mold.Error.new("you must call Mold.prep/1 on the spec before calling Mold.exam/2"))
     else
       spec
     end

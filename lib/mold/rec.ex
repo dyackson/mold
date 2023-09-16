@@ -87,9 +87,7 @@ defmodule Mold.Rec do
 
         if shared_keys != "" do
           raise(
-            Error.new(
-              "the following keys were in both :optional and :required -- #{shared_keys}"
-            )
+            Error.new("the following keys were in both :optional and :required -- #{shared_keys}")
           )
         end
 
