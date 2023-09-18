@@ -24,7 +24,7 @@ ExDoc are in the works, but here are annotated examples:
       end
     )
 
-    # Mold.prep!\1 ensures that you're using the library correctly.
+    # Mold.prep!/1 ensures that you're using the library correctly.
     assert_raise(
       Mold.Error,
       ":required must be a Map with string keys and Mold protocol-implementing values",
@@ -121,7 +121,7 @@ ExDoc are in the works, but here are annotated examples:
       }
     }
 
-    # Call Mold.exam\2 to see if data is valid
+    # Call Mold.exam/2 to see if data is valid
     # It returns :ok or an error-tuple
     # When data is valid
     assert :ok = Mold.exam(user_mold, user)
