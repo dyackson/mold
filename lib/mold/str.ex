@@ -7,8 +7,8 @@ defmodule Mold.Str do
     :regex,
     :one_of,
     :one_of_ci,
-    :min_length,
-    :max_length,
+    :min,
+    :max,
     :but,
     :error_message,
     nil_ok?: false,
@@ -53,9 +53,9 @@ defmodule Mold.Str do
 
     defp local_prep!(%Str{} = mold)
          when (not is_nil(mold.one_of) or not is_nil(mold.one_of_ci) or not is_nil(mold.regex)) and
-                (not is_nil(mold.min_length) or not is_nil(mold.max_length)) do
+                (not is_nil(mold.min) or not is_nil(mold.max)) do
       field1 = Enum.find([:one_of, :one_of_ci, :regex], &(Map.get(mold, &1) != nil))
-      field2 = Enum.find([:min_length, :max_length], &(Map.get(mold, &1) != nil))
+      field2 = Enum.find([:min, :max], &(Map.get(mold, &1) != nil))
 
       raise Error.new("cannot use both #{inspect(field1)} and #{inspect(field2)}")
     end
@@ -99,19 +99,19 @@ defmodule Mold.Str do
       end
     end
 
-    defp local_prep!(%Str{min_length: min})
+    defp local_prep!(%Str{min: min})
          when not (is_nil(min) or (is_integer(min) and min > 0)) do
-      raise Error.new(":min_length must be a positive integer")
+      raise Error.new(":min must be a positive integer")
     end
 
-    defp local_prep!(%Str{max_length: max})
+    defp local_prep!(%Str{max: max})
          when not (is_nil(max) or (is_integer(max) and max > 0)) do
-      raise Error.new(":max_length must be a positive integer")
+      raise Error.new(":max must be a positive integer")
     end
 
-    defp local_prep!(%Str{min_length: min, max_length: max})
+    defp local_prep!(%Str{min: min, max: max})
          when is_integer(min) and is_integer(max) and min > max do
-      raise Error.new(":max_length must be greater than or equal to :min_length")
+      raise Error.new(":max must be greater than or equal to :min")
     end
 
     defp local_prep!(%Str{} = mold), do: mold
@@ -131,13 +131,13 @@ defmodule Mold.Str do
             one_of_ci = one_of_ci |> Enum.map(&~s["#{&1}"]) |> Enum.join(", ")
             "must be one of these strings (case doesn't have to match): #{one_of_ci}"
 
-          %{min_length: min, max_length: nil} when is_integer(min) ->
+          %{min: min, max: nil} when is_integer(min) ->
             "must be a string with at least #{min} characters"
 
-          %{min_length: nil, max_length: max} when is_integer(max) ->
+          %{min: nil, max: max} when is_integer(max) ->
             "must be a string with at most #{max} characters"
 
-          %{min_length: min, max_length: max} when is_integer(min) and is_integer(max) ->
+          %{min: min, max: max} when is_integer(min) and is_integer(max) ->
             "must be a string with at least #{min} and at most #{max} characters"
 
           _ ->
@@ -170,7 +170,7 @@ defmodule Mold.Str do
       if String.downcase(val) in already_downcased, do: :ok, else: :error
     end
 
-    def local_exam(%Str{min_length: min, max_length: max}, val)
+    def local_exam(%Str{min: min, max: max}, val)
         when is_integer(min) or is_integer(max) do
       len = String.length(val)
 

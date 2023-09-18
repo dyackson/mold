@@ -8,8 +8,8 @@ defmodule Mold.Dic do
     :error_message,
     :keys,
     :vals,
-    :min_size,
-    :max_size,
+    :min,
+    :max,
     nil_ok?: false,
     __prepped__: false
   ]
@@ -36,7 +36,7 @@ defmodule Mold.Dic do
       end
     end
 
-    defp local_prep!(%Dic{min_size: min_size, max_size: max_size} = mold) do
+    defp local_prep!(%Dic{min: min, max: max} = mold) do
       prep_error_msg =
         cond do
           !Mold.impl_for(mold.keys) || mold.keys.__struct__ not in [Mold.Str, Mold.Int] ->
@@ -45,14 +45,14 @@ defmodule Mold.Dic do
           !Mold.impl_for(mold.vals) ->
             ":vals must implement the Mold protocol"
 
-          not (is_nil(min_size) || (is_integer(min_size) and min_size >= 0)) ->
-            ":min_size must be a non-negative integer"
+          not (is_nil(min) || (is_integer(min) and min >= 0)) ->
+            ":min must be a non-negative integer"
 
-          not (is_nil(max_size) || (is_integer(max_size) and max_size > 0)) ->
-            ":max_size must be a positive integer"
+          not (is_nil(max) || (is_integer(max) and max > 0)) ->
+            ":max must be a positive integer"
 
-          is_integer(min_size) && is_integer(max_size) && min_size > max_size ->
-            ":min_size must be less than or equal to :max_size"
+          is_integer(min) && is_integer(max) && min > max ->
+            ":min must be less than or equal to :max"
 
           true ->
             nil
@@ -74,7 +74,7 @@ defmodule Mold.Dic do
             mold.keys.error_message <> ", and each value " <> mold.vals.error_message
 
         error_message =
-          case {mold.min_size, mold.max_size} do
+          case {mold.min, mold.max} do
             {nil, nil} ->
               "must be a mapping " <> key_val_msg
 
@@ -102,16 +102,16 @@ defmodule Mold.Dic do
     defp local_exam(%Dic{}, val) when not is_map(val), do: :error
 
     defp local_exam(%Dic{} = mold, val)
-         when is_integer(mold.min_size) and map_size(val) < mold.min_size,
+         when is_integer(mold.min) and map_size(val) < mold.min,
          do: :error
 
     defp local_exam(%Dic{} = mold, val)
-         when is_integer(mold.max_size) and map_size(val) > mold.max_size,
+         when is_integer(mold.max) and map_size(val) > mold.max,
          do: :error
 
-    defp local_exam(%Dic{} = mold, val) do
+    defp local_exam(%Dic{} = mold, dic) do
       {nested_errors, bad_keys} =
-        Enum.reduce(val, {%{}, []}, fn
+        Enum.reduce(dic, {%{}, []}, fn
           {key, val}, {nested_errors, bad_keys} = _acc ->
             bad_keys =
               case Mold.exam(mold.keys, key) do
@@ -128,11 +128,11 @@ defmodule Mold.Dic do
             {nested_errors, bad_keys}
         end)
 
-      # use a moldial field for bad keys because putting them in the error map the normal way is ambiguous
+      # use a special field for bad keys because putting them in the error map the normal way is ambiguous
       error_map =
         case bad_keys do
           [_ | _] ->
-            Map.put(nested_errors, "__key_errors__", %{
+            Map.put(nested_errors, :__key_errors__, %{
               keys: Enum.sort(bad_keys),
               message: mold.keys.error_message
             })

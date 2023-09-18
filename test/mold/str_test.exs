@@ -35,21 +35,21 @@ defmodule Mold.StrTest do
       end)
     end
 
-    test ":min_length is not a positive integer" do
-      assert_raise(Error, ":min_length must be a positive integer", fn ->
-        Mold.prep!(%Str{min_length: 0})
+    test ":min is not a positive integer" do
+      assert_raise(Error, ":min must be a positive integer", fn ->
+        Mold.prep!(%Str{min: 0})
       end)
     end
 
-    test ":max_length is not a positive integer" do
-      assert_raise(Error, ":max_length must be a positive integer", fn ->
-        Mold.prep!(%Str{max_length: 0})
+    test ":max is not a positive integer" do
+      assert_raise(Error, ":max must be a positive integer", fn ->
+        Mold.prep!(%Str{max: 0})
       end)
     end
 
-    test ":max_length is less than min_length" do
-      assert_raise(Error, ":max_length must be greater than or equal to :min_length", fn ->
-        Mold.prep!(%Str{max_length: 1, min_length: 2})
+    test ":max is less than min" do
+      assert_raise(Error, ":max must be greater than or equal to :min", fn ->
+        Mold.prep!(%Str{max: 1, min: 2})
       end)
     end
 
@@ -71,17 +71,17 @@ defmodule Mold.StrTest do
       end)
     end
 
-    test "using both min_length/max_length and an regex/one_of/one_of_ci" do
-      assert_raise(Error, "cannot use both :regex and :min_length", fn ->
-        Mold.prep!(%Str{min_length: 5, regex: ~r/^(foo|bar)$/})
+    test "using both min/max and an regex/one_of/one_of_ci" do
+      assert_raise(Error, "cannot use both :regex and :min", fn ->
+        Mold.prep!(%Str{min: 5, regex: ~r/^(foo|bar)$/})
       end)
 
-      assert_raise(Error, "cannot use both :one_of and :min_length", fn ->
-        Mold.prep!(%Str{min_length: 5, one_of: ["fool", "bart"]})
+      assert_raise(Error, "cannot use both :one_of and :min", fn ->
+        Mold.prep!(%Str{min: 5, one_of: ["fool", "bart"]})
       end)
 
-      assert_raise(Error, "cannot use both :one_of_ci and :max_length", fn ->
-        Mold.prep!(%Str{max_length: 5, one_of_ci: ["fool", "bart"]})
+      assert_raise(Error, "cannot use both :one_of_ci and :max", fn ->
+        Mold.prep!(%Str{max: 5, one_of_ci: ["fool", "bart"]})
       end)
     end
   end
@@ -105,13 +105,13 @@ defmodule Mold.StrTest do
                Mold.prep!(%Str{regex: ~r/^\d+$/})
 
       assert %Str{error_message: "must be a string with at least 5 characters"} =
-               Mold.prep!(%Str{min_length: 5})
+               Mold.prep!(%Str{min: 5})
 
       assert %Str{error_message: "must be a string with at most 10 characters"} =
-               Mold.prep!(%Str{max_length: 10})
+               Mold.prep!(%Str{max: 10})
 
       assert %Str{error_message: "must be a string with at least 5 and at most 10 characters"} =
-               Mold.prep!(%Str{min_length: 5, max_length: 10})
+               Mold.prep!(%Str{min: 5, max: 10})
     end
 
     test "accepts an error message" do
@@ -184,22 +184,22 @@ defmodule Mold.StrTest do
       assert {:error, "wrong"} = Mold.exam(mold, "steve")
     end
 
-    test "checks :min_length" do
-      mold = Mold.prep!(%Str{error_message: "wrong", min_length: 4})
+    test "checks :min" do
+      mold = Mold.prep!(%Str{error_message: "wrong", min: 4})
       assert :ok = Mold.exam(mold, "12345")
       assert :ok = Mold.exam(mold, "1234")
       assert {:error, "wrong"} = Mold.exam(mold, "123")
     end
 
-    test "checks :max_length" do
-      mold = Mold.prep!(%Str{error_message: "wrong", max_length: 4})
+    test "checks :max" do
+      mold = Mold.prep!(%Str{error_message: "wrong", max: 4})
       assert {:error, "wrong"} = Mold.exam(mold, "12345")
       assert :ok = Mold.exam(mold, "1234")
       assert :ok = Mold.exam(mold, "123")
     end
 
-    test "checks both :min_length and :max_length" do
-      mold = Mold.prep!(%Str{error_message: "wrong", min_length: 3, max_length: 4})
+    test "checks both :min and :max" do
+      mold = Mold.prep!(%Str{error_message: "wrong", min: 3, max: 4})
       assert {:error, "wrong"} = Mold.exam(mold, "12345")
       assert :ok = Mold.exam(mold, "1234")
       assert :ok = Mold.exam(mold, "123")

@@ -1,12 +1,7 @@
-# Mold
+defmodule Mold.MoldTest do
+  use ExUnit.Case
 
-**A validator for decoded json**
-
-## Examples
-
-ExDoc are in the works, but here are annotated examples:
-
-```elixir
+  test "random mold" do
     # A mold describes the shape of data.
     # It's only for data types that could have been parsed from JSON
     mold = %Mold.Rec{
@@ -190,9 +185,5 @@ ExDoc are in the works, but here are annotated examples:
                "rap" => %{"artist" => "is required"}
              }
            }
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/payload_validator](https://hexdocs.pm/payload_validator).
-
+  end
+end

@@ -79,11 +79,11 @@ defmodule Mold.RecTest do
     end
 
     test ":optional or :required contains an invalid mold" do
-      bad = %{"my_str" => %Mold.Str{min_length: -1}}
+      bad = %{"my_str" => %Mold.Str{min: -1}}
 
       assert_raise(
         Error,
-        ":min_length must be a positive integer",
+        ":min must be a positive integer",
         fn ->
           Mold.prep!(%Rec{optional: bad})
         end
@@ -91,7 +91,7 @@ defmodule Mold.RecTest do
 
       assert_raise(
         Error,
-        ":min_length must be a positive integer",
+        ":min must be a positive integer",
         fn ->
           Mold.prep!(%Rec{required: bad})
         end

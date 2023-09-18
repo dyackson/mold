@@ -8,8 +8,8 @@ defmodule Mold.Lst do
     :but,
     :error_message,
     :of,
-    :min_length,
-    :max_length,
+    :min,
+    :max,
     nil_ok?: false,
     __prepped__: false
   ]
@@ -47,15 +47,15 @@ defmodule Mold.Lst do
     defp local_prep!(%Lst{} = mold) do
       length_error_msg =
         case mold do
-          %{min_length: l} when not (is_nil(l) or (is_integer(l) and l >= 0)) ->
-            ":min_length must be a non-negative integer"
+          %{min: l} when not (is_nil(l) or (is_integer(l) and l >= 0)) ->
+            ":min must be a non-negative integer"
 
-          %{max_length: l} when not (is_nil(l) or (is_integer(l) and l > 0)) ->
-            ":max_length must be a positive integer"
+          %{max: l} when not (is_nil(l) or (is_integer(l) and l > 0)) ->
+            ":max must be a positive integer"
 
-          %{min_length: min, max_length: max}
+          %{min: min, max: max}
           when is_integer(min) and is_integer(max) and min > max ->
-            ":min_length must be less than or equal to :max_length"
+            ":min must be less than or equal to :max"
 
           _ ->
             nil
@@ -73,7 +73,7 @@ defmodule Mold.Lst do
         mold
       else
         error_message =
-          case {mold.min_length, mold.max_length} do
+          case {mold.min, mold.max} do
             {nil, nil} ->
               "must be a list in which each element " <> mold.of.error_message
 
@@ -103,14 +103,14 @@ defmodule Mold.Lst do
 
     defp local_exam(%Lst{}, val) when not is_list(val), do: :error
 
-    defp local_exam(%Lst{min_length: min_length, max_length: max_length} = mold, val) do
-      length = if is_integer(min_length) or is_integer(max_length), do: length(val)
+    defp local_exam(%Lst{min: min, max: max} = mold, val) do
+      length = if is_integer(min) or is_integer(max), do: length(val)
 
       cond do
-        is_integer(min_length) && length < min_length ->
+        is_integer(min) && length < min ->
           :error
 
-        is_integer(max_length) && length > max_length ->
+        is_integer(max) && length > max ->
           :error
 
         true ->

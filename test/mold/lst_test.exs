@@ -18,29 +18,29 @@ defmodule Mold.LstTest do
       end)
     end
 
-    test ":min_length" do
-      assert_raise(Error, ":min_length must be a non-negative integer", fn ->
-        Mold.prep!(%Lst{min_length: -1})
+    test ":min" do
+      assert_raise(Error, ":min must be a non-negative integer", fn ->
+        Mold.prep!(%Lst{min: -1})
       end)
 
-      assert_raise(Error, ":min_length must be a non-negative integer", fn ->
-        Mold.prep!(%Lst{min_length: "9"})
-      end)
-    end
-
-    test ":max_length" do
-      assert_raise(Error, ":max_length must be a positive integer", fn ->
-        Mold.prep!(%Lst{max_length: 0})
-      end)
-
-      assert_raise(Error, ":max_length must be a positive integer", fn ->
-        Mold.prep!(%Lst{max_length: "5"})
+      assert_raise(Error, ":min must be a non-negative integer", fn ->
+        Mold.prep!(%Lst{min: "9"})
       end)
     end
 
-    test ":min_length - :max_length combo" do
-      assert_raise(Error, ":min_length must be less than or equal to :max_length", fn ->
-        Mold.prep!(%Lst{min_length: 5, max_length: 4})
+    test ":max" do
+      assert_raise(Error, ":max must be a positive integer", fn ->
+        Mold.prep!(%Lst{max: 0})
+      end)
+
+      assert_raise(Error, ":max must be a positive integer", fn ->
+        Mold.prep!(%Lst{max: "5"})
+      end)
+    end
+
+    test ":min - :max combo" do
+      assert_raise(Error, ":min must be less than or equal to :max", fn ->
+        Mold.prep!(%Lst{min: 5, max: 4})
       end)
     end
 
@@ -64,17 +64,17 @@ defmodule Mold.LstTest do
       assert %Lst{
                error_message:
                  "must be a list with at least 5 elements, each of which must be a string"
-             } = Mold.prep!(%Lst{of: %Str{}, min_length: 5})
+             } = Mold.prep!(%Lst{of: %Str{}, min: 5})
 
       assert %Lst{
                error_message:
                  "must be a list with at most 5 elements, each of which must be a string"
-             } = Mold.prep!(%Lst{of: %Str{}, max_length: 5})
+             } = Mold.prep!(%Lst{of: %Str{}, max: 5})
 
       assert %Lst{
                error_message:
                  "must be a list with at least 1 and at most 5 elements, each of which must be a string"
-             } = Mold.prep!(%Lst{of: %Str{}, min_length: 1, max_length: 5})
+             } = Mold.prep!(%Lst{of: %Str{}, min: 1, max: 5})
     end
 
     test "accepts an error message" do
@@ -109,16 +109,16 @@ defmodule Mold.LstTest do
       {:error, "wrong"} = Mold.exam(mold, "foo")
     end
 
-    test ":min_length" do
-      mold = Mold.prep!(%Lst{of: %Str{}, min_length: 2, error_message: "wrong"})
+    test ":min" do
+      mold = Mold.prep!(%Lst{of: %Str{}, min: 2, error_message: "wrong"})
 
       :ok = Mold.exam(mold, ["foo", "bar"])
       :ok = Mold.exam(mold, ["foo", "bar", "deez"])
       {:error, "wrong"} = Mold.exam(mold, ["foo"])
     end
 
-    test ":max_length" do
-      mold = Mold.prep!(%Lst{of: %Str{}, max_length: 3, error_message: "wrong"})
+    test ":max" do
+      mold = Mold.prep!(%Lst{of: %Str{}, max: 3, error_message: "wrong"})
 
       :ok = Mold.exam(mold, ["foo", "bar"])
       :ok = Mold.exam(mold, ["foo", "bar", "deez"])

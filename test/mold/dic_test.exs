@@ -50,43 +50,43 @@ defmodule Mold.DicTest do
       end)
     end
 
-    test ":min_size" do
+    test ":min" do
       mold = %Dic{keys: %Str{}, vals: %Int{}}
 
-      assert_raise(Error, ":min_size must be a non-negative integer", fn ->
-        Mold.prep!(%{mold | min_size: -1})
+      assert_raise(Error, ":min must be a non-negative integer", fn ->
+        Mold.prep!(%{mold | min: -1})
       end)
 
-      assert_raise(Error, ":min_size must be a non-negative integer", fn ->
-        Mold.prep!(%{mold | min_size: "1"})
+      assert_raise(Error, ":min must be a non-negative integer", fn ->
+        Mold.prep!(%{mold | min: "1"})
       end)
 
-      assert %Dic{} = Mold.prep!(%{mold | min_size: 0})
+      assert %Dic{} = Mold.prep!(%{mold | min: 0})
     end
 
-    test ":max_size" do
+    test ":max" do
       mold = %Dic{keys: %Str{}, vals: %Int{}}
 
-      assert_raise(Error, ":max_size must be a positive integer", fn ->
-        Mold.prep!(%{mold | max_size: 0})
+      assert_raise(Error, ":max must be a positive integer", fn ->
+        Mold.prep!(%{mold | max: 0})
       end)
 
-      assert_raise(Error, ":max_size must be a positive integer", fn ->
-        Mold.prep!(%{mold | max_size: "5"})
+      assert_raise(Error, ":max must be a positive integer", fn ->
+        Mold.prep!(%{mold | max: "5"})
       end)
 
-      assert %Dic{} = Mold.prep!(%{mold | max_size: 5})
+      assert %Dic{} = Mold.prep!(%{mold | max: 5})
     end
 
-    test ":min_size - :max_size combo" do
+    test ":min - :max combo" do
       mold = %Dic{keys: %Str{}, vals: %Int{}}
 
-      assert_raise(Error, ":min_size must be less than or equal to :max_size", fn ->
-        Mold.prep!(%{mold | min_size: 3, max_size: 2})
+      assert_raise(Error, ":min must be less than or equal to :max", fn ->
+        Mold.prep!(%{mold | min: 3, max: 2})
       end)
 
-      assert %Dic{} = Mold.prep!(%{mold | min_size: 2, max_size: 2})
-      assert %Dic{} = Mold.prep!(%{mold | min_size: 2, max_size: 3})
+      assert %Dic{} = Mold.prep!(%{mold | min: 2, max: 2})
+      assert %Dic{} = Mold.prep!(%{mold | min: 2, max: 3})
     end
   end
 
@@ -100,13 +100,13 @@ defmodule Mold.DicTest do
       assert Mold.prep!(%{mold | nil_ok?: true}).error_message ==
                "if not nil, must be a mapping where each key must be a string, and each value must be an integer"
 
-      assert Mold.prep!(%{mold | min_size: 5}).error_message ==
+      assert Mold.prep!(%{mold | min: 5}).error_message ==
                "must be a mapping with at least 5 entries, where each key must be a string, and each value must be an integer"
 
-      assert Mold.prep!(%{mold | max_size: 5}).error_message ==
+      assert Mold.prep!(%{mold | max: 5}).error_message ==
                "must be a mapping with at most 5 entries, where each key must be a string, and each value must be an integer"
 
-      assert Mold.prep!(%{mold | min_size: 2, max_size: 5}).error_message ==
+      assert Mold.prep!(%{mold | min: 2, max: 5}).error_message ==
                "must be a mapping with at least 2 and at most 5 entries, where each key must be a string, and each value must be an integer"
     end
 
@@ -147,16 +147,16 @@ defmodule Mold.DicTest do
       :ok = Mold.exam(mold, %{"foo" => 5, "bar" => 9})
     end
 
-    test ":min_size" do
-      mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, min_size: 2, error_message: "wrong"})
+    test ":min" do
+      mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, min: 2, error_message: "wrong"})
 
       :ok = Mold.exam(mold, %{"foo" => 5, "bar" => 9})
       :ok = Mold.exam(mold, %{"foo" => 5, "bar" => 9, "fud" => 8})
       {:error, "wrong"} = Mold.exam(mold, %{"foo" => 5})
     end
 
-    test ":max_size" do
-      mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, max_size: 2, error_message: "wrong"})
+    test ":max" do
+      mold = Mold.prep!(%Dic{keys: %Str{}, vals: %Int{}, max: 2, error_message: "wrong"})
 
       :ok = Mold.exam(mold, %{"foo" => 5})
       :ok = Mold.exam(mold, %{"foo" => 5, "bar" => 9})
@@ -172,8 +172,7 @@ defmodule Mold.DicTest do
 
       assert :ok = Mold.exam(mold, %{"09af" => 3, "1dd" => 5, "1a9" => 2})
 
-      assert {:error,
-              %{"__key_errors__" => %{keys: [-1, "bar"], message: "must be a hex string"}}} =
+      assert {:error, %{__key_errors__: %{keys: [-1, "bar"], message: "must be a hex string"}}} =
                Mold.exam(mold, %{"09af" => 3, -1 => 5, "bar" => 2})
     end
 
