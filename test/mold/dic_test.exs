@@ -7,12 +7,6 @@ defmodule Mold.DicTest do
   use ExUnit.Case
 
   describe "Mold.prep! a Dic raises a Error when the mold has bad" do
-    test "nil_ok?" do
-      assert_raise(Error, ":nil_ok? must be a boolean", fn ->
-        Mold.prep!(%Dic{nil_ok?: "yuh"})
-      end)
-    end
-
     test ":but" do
       assert_raise(Error, ":but must be an arity-1 function that returns a boolean", fn ->
         Mold.prep!(%Dic{but: &(&1 + &2)})

@@ -1,5 +1,6 @@
 defmodule Mold.MoldTest do
   use ExUnit.Case
+  import Mold
 
   test "random mold" do
     # A mold describes the shape of data.
@@ -93,6 +94,167 @@ defmodule Mold.MoldTest do
         "anything_else" => %Mold.Any{}
       }
     }
+
+    # prep! recusively preps nested molds
+    user_mold = Mold.prep!(user_mold)
+
+    user = %{
+      "first_name" => "Cornelius",
+      "last_name" => "Adoab",
+      "middle_initial" => "R",
+      "id" => "a9bf0",
+      "date_of_birth" => "1915-12-14",
+      "lucky_numbers" => [1, 2, 3],
+      "gender" => nil,
+      "pets" => [
+        %{"name" => "Bilton", "species" => "badger", "is_rescue" => false},
+        %{"name" => "Sledrick", "species" => "snake", "is_rescue" => true}
+      ],
+      "temperature" => "103.9",
+      "favorite_songs_by_genre" => %{
+        "bluegrass" => %{"title" => "Glendale Train", "artist" => "New Riders of the Purple Sage"},
+        "80s Athens, GA rock" => %{"title" => "Radio Free Europe", "artist" => "REM"}
+      }
+    }
+
+    # Call Mold.exam\2 to see if data is valid
+    # It returns :ok or an error-tuple
+    # When data is valid
+    assert :ok = Mold.exam(user_mold, user)
+
+    # An errors when data has invalid top-level fields
+    invalid_user =
+      Map.merge(user, %{
+        "first_name" => nil,
+        "lucky_numbers" => [1, 2],
+        "gender" => "woman",
+        "temperature" => "-100"
+      })
+
+    assert {:error, error_map} = Mold.exam(user_mold, invalid_user)
+
+    assert error_map == %{
+             "first_name" => "must be a string",
+             "lucky_numbers" =>
+               "must be a list with at least 3 elements, each of which must be an integer",
+             "gender" =>
+               "if not nil, must be one of these strings (with matching case): \"male\", \"female\", \"non-binary\"",
+             "temperature" => "must be a decimal-formatted string greater than 0"
+           }
+
+    # error when data has invalid nested fields
+    invalid_user =
+      user
+      |> Map.put("lucky_numbers", ["seven", 2, "3.14"])
+      |> update_in(["pets"], fn pets ->
+        ["Steve", %{"name" => "Larry", "species" => true} | pets]
+      end)
+      |> put_in(["favorite_songs_by_genre", "bluegrass", "title"], nil)
+
+    assert {:error, error_map} = Mold.exam(user_mold, invalid_user)
+
+    assert error_map ==
+             %{
+               "lucky_numbers" => %{
+                 0 => "must be an integer",
+                 2 => "must be an integer"
+               },
+               "pets" => %{
+                 0 =>
+                   "must be a record with the required keys \"is_rescue\", \"name\", \"species\"",
+                 1 => %{"species" => "must be a string", "is_rescue" => "is required"}
+               },
+               "favorite_songs_by_genre" => %{"bluegrass" => %{"title" => "must be a string"}}
+             }
+
+    # error when Dic[tionary] keys are invalid
+    invalid_user =
+      put_in(user, ["favorite_songs_by_genre", "rap"], %{
+        "group" => "Outkast",
+        "title" => "Elevators"
+      })
+
+    assert {:error, error_map} = Mold.exam(user_mold, invalid_user)
+
+    assert error_map == %{
+             "favorite_songs_by_genre" => %{
+               :__key_errors__ => %{
+                 message: "must be a string with at least 4 characters",
+                 keys: ["rap"]
+               },
+               # errors in the value for a bad key are also reported
+               "rap" => %{"artist" => "is required"}
+             }
+           }
+  end
+
+  test "mold macros" do
+    assert int(gte: 1) == %Mold.Int{gte: 1}
+    assert int() == %Mold.Int{}
+
+    assert str(min: 1) == %Mold.Str{min: 1}
+    assert str() == %Mold.Str{}
+
+    assert lst(min: 1) == %Mold.Lst{min: 1}
+    assert lst() == %Mold.Lst{}
+
+    assert boo(nil_ok?: true) == %Mold.Boo{nil_ok?: true}
+    assert boo() == %Mold.Boo{}
+
+    assert any(nil_ok?: true) == %Mold.Any{nil_ok?: true}
+    assert any() == %Mold.Any{}
+
+    assert dec(lte: 1) == %Mold.Dec{lte: 1}
+    assert dec() == %Mold.Dec{}
+
+    assert rec(required: %{"foo" => any()}) == %Mold.Rec{required: %{"foo" => %Mold.Any{}}}
+    assert rec() == %Mold.Rec{}
+
+    assert dic(keys: str(), vals: int()) == %Mold.Dic{keys: %Mold.Str{}, vals: %Mold.Int{}}
+    assert dic() == %Mold.Dic{}
+  end
+
+  test "random test with macros" do
+    # Let's prep and use a valid mold for describing a user for a music+health+pets app
+    pet_mold = rec(required: %{"name" => str(), "species" => str(), "is_rescue" => boo()})
+
+    song_by_genre_mold =
+      dic(
+        keys: str(min: 4),
+        vals:
+          rec(
+            required: %{"artist" => str(), "title" => str()},
+            optional: %{"year" => int(gte: 1900, lte: 2025)}
+          )
+      )
+
+    user_mold =
+      rec(
+        required: %{
+          "first_name" => str(),
+          "last_name" => str(),
+          "middle_initial" => str(nil_ok?: true, max: 1),
+          # all molds have a :but field that allows for custom logic
+          "date_of_birth" =>
+            str(
+              but: fn it -> match?({:ok, _}, Date.from_iso8601(it)) end,
+              error_message: "must be formatted yyyy-mm-dd"
+            ),
+          "id" =>
+            str(
+              regex: ~r/^[0-f]{5}$/,
+              error_message: "must be a a length 5 hex string"
+            ),
+          "lucky_numbers" => lst(of: int(), min: 3)
+        },
+        optional: %{
+          "gender" => str(one_of: ["male", "female", "non-binary"], nil_ok?: true),
+          "temperature" => dec(gt: 0),
+          "pets" => lst(of: pet_mold),
+          "favorite_songs_by_genre" => song_by_genre_mold,
+          "anything_else" => any()
+        }
+      )
 
     # prep! recusively preps nested molds
     user_mold = Mold.prep!(user_mold)
