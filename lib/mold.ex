@@ -1,5 +1,4 @@
-defprotocol Mold do
-  def prep!(mold)
-
-  def exam(mold, value)
+defmodule Mold do
+  defdelegate prep!(mold), to: Mold.Protocol
+  defdelegate exam(mold, value), to: Mold.Protocol
 end

@@ -15,7 +15,7 @@ defmodule Mold.Dec do
     __prepped__: false
   ]
 
-  defimpl Mold do
+  defimpl Mold.Protocol do
     # not using Decimal lib to decide what's a decimal because it allows integers and scientific notation strings
     @decimal_regex ~r/^\s*-?\d*\.?\d+\s*$/
 

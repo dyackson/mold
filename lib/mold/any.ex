@@ -9,7 +9,7 @@ defmodule Mold.Any do
     __prepped__: false
   ]
 
-  defimpl Mold do
+  defimpl Mold.Protocol do
     def prep!(%Any{} = any) do
       any
       |> Common.prep!()

@@ -4,7 +4,7 @@ defmodule Mold.Boo do
 
   defstruct [:error_message, :but, nil_ok?: false, __prepped__: false]
 
-  defimpl Mold do
+  defimpl Mold.Protocol do
     def prep!(%Boo{} = mold) do
       mold
       |> Common.prep!()

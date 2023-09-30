@@ -14,7 +14,7 @@ defmodule Mold.Int do
     __prepped__: false
   ]
 
-  defimpl Mold do
+  defimpl Mold.Protocol do
     def prep!(%Int{} = mold) do
       mold = Common.prep!(mold)
 

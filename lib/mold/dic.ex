@@ -14,7 +14,7 @@ defmodule Mold.Dic do
     __prepped__: false
   ]
 
-  defimpl Mold do
+  defimpl Mold.Protocol do
     def prep!(%Dic{} = mold) do
       mold
       |> Common.prep!()
@@ -39,10 +39,10 @@ defmodule Mold.Dic do
     defp local_prep!(%Dic{min: min, max: max} = mold) do
       prep_error_msg =
         cond do
-          !Mold.impl_for(mold.keys) || mold.keys.__struct__ not in [Mold.Str, Mold.Int] ->
+          !Mold.Protocol.impl_for(mold.keys) || mold.keys.__struct__ not in [Mold.Str, Mold.Int] ->
             ":keys must be an %Mold.Str{} or %Mold.Int{}"
 
-          !Mold.impl_for(mold.vals) ->
+          !Mold.Protocol.impl_for(mold.vals) ->
             ":vals must implement the Mold protocol"
 
           not (is_nil(min) || (is_integer(min) and min >= 0)) ->

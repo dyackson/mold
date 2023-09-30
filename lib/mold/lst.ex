@@ -14,7 +14,7 @@ defmodule Mold.Lst do
     __prepped__: false
   ]
 
-  defimpl Mold do
+  defimpl Mold.Protocol do
     def prep!(%Lst{} = mold) do
       mold
       |> Common.prep!()
@@ -128,6 +128,6 @@ defmodule Mold.Lst do
       end
     end
 
-    def is_mold?(val), do: Mold.impl_for(val) != nil
+    def is_mold?(val), do: Mold.Protocol.impl_for(val) != nil
   end
 end

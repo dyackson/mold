@@ -6,7 +6,7 @@ defmodule Mold.MoldTest do
     # It's only for data types that could have been parsed from JSON
     mold = %Mold.Rec{
       required: %{
-        "my_int" => %Mold.Int{min: 0},
+        "my_int" => %Mold.Int{gte: 0},
         "my_str" => %Mold.Str{one_of: ["foo", "bar", "who"]}
       }
     }

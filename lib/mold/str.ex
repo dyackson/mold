@@ -15,7 +15,7 @@ defmodule Mold.Str do
     __prepped__: false
   ]
 
-  defimpl Mold do
+  defimpl Mold.Protocol do
     @non_empty_list_msg "must be a non-empty list of strings"
 
     def prep!(%Str{} = mold) do

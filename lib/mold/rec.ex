@@ -13,7 +13,7 @@ defmodule Mold.Rec do
     __prepped__: false
   ]
 
-  defimpl Mold do
+  defimpl Mold.Protocol do
     @mold_map_msg "must be a Map with string keys and Mold protocol-implementing values"
 
     def prep!(%Rec{} = mold) do
@@ -193,6 +193,6 @@ defmodule Mold.Rec do
       if errors_by_field == %{}, do: :ok, else: {:error, errors_by_field}
     end
 
-    def is_mold?(val), do: Mold.impl_for(val) != nil
+    def is_mold?(val), do: Mold.Protocol.impl_for(val) != nil
   end
 end
