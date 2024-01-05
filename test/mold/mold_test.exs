@@ -2,50 +2,100 @@ defmodule Mold.MoldTest do
   use ExUnit.Case
   import Mold
 
-  test "random mold" do
-    # A mold describes the shape of data.
-    # It's only for data types that could have been parsed from JSON
-    mold = %Mold.Rec{
+  test "basic usage" do
+    # define a struct for validating data
+    mold =
+      %Mold.Rec{
+        required: %{
+          "my_int" => %Mold.Int{gte: 0},
+          "my_str" => %Mold.Str{one_of: ["foo", "bar"]}
+        },
+        optional: %{
+          "my_lst" => %Mold.Lst{of: %Mold.Str{}}
+        }
+      }
+      |> Mold.prep!()
+
+    # use Mold.exam/2 to valide data against a mold
+
+    valid_data = %{"my_int" => 1, "my_str" => "foo"}
+
+    assert :ok = Mold.exam(mold, valid_data)
+
+    invalid_data = %{"my_int" => -1, "my_str" => "bla", "my_lst" => ["a", 2, "c"]}
+
+    assert {:error, error_map} = Mold.exam(mold, invalid_data)
+
+    assert error_map == %{
+             "my_int" => "must be an integer greater than or equal to 0",
+             "my_str" => "must be one of these strings (with matching case): \"foo\", \"bar\"",
+             "my_lst" => %{1 => "must be a string"}
+           }
+  end
+
+  test "there are macros for creating any mold struct with fewer keystrokes" do
+    created_without_macros = %Mold.Rec{
       required: %{
         "my_int" => %Mold.Int{gte: 0},
-        "my_str" => %Mold.Str{one_of: ["foo", "bar", "who"]}
+        "my_str" => %Mold.Str{one_of: ["foo", "bar"]}
+      },
+      optional: %{
+        "my_lst" => %Mold.Lst{of: %Mold.Str{}}
       }
     }
+
+    created_with_macros =
+      rec(
+        required: %{
+          "my_int" => int(gte: 0),
+          "my_str" => str(one_of: ["foo", "bar"])
+        },
+        optional: %{
+          "my_lst" => lst(of: str())
+        }
+      )
+
+    assert created_with_macros == created_without_macros
+  end
+
+  test "Recs must be prepped before use" do
+    unprepped_mold = %Mold.Int{lt: 100}
 
     assert_raise(
       Mold.Error,
       "you must call Mold.prep/1 on the mold before calling Mold.exam/2",
-      fn ->
-        Mold.exam(mold, %{"my_int" => 1, "my_str" => "foo"})
-      end
+      fn -> Mold.exam(unprepped_mold, 1) end
     )
 
     # Mold.prep!\1 ensures that you're using the library correctly.
+    bad_mold = %Mold.Int{lt: true}
+
     assert_raise(
       Mold.Error,
-      ":required must be a Map with string keys and Mold protocol-implementing values",
-      fn ->
-        bad_mold = %Mold.Rec{required: ["name", "age"]}
-        Mold.prep!(bad_mold)
-      end
+      ":lt must be an integer",
+      fn -> Mold.prep!(bad_mold) end
     )
 
-    # And prevents you from creating an impossible mold
+    # Mold.prep! prevents you from creating mold that can't be satisfied
+    impossible_mold = %Mold.Rec{required: %{"my_int" => %Mold.Int{gt: 4, lt: 1}}}
+
     assert_raise(Mold.Error, ":gt must be less than :lt", fn ->
-      bad_mold = %Mold.Rec{required: %{"my_int" => %Mold.Int{gt: 4, lt: 1}}}
-      Mold.prep!(bad_mold)
+      Mold.prep!(impossible_mold)
     end)
 
-    # It also pre-computes error messages
+    # Mold.prep!\1 pre-computes error messages
+    mold = %Mold.Int{gte: 0, lt: 100, nil_ok?: true}
+
     assert %Mold.Int{
              error_message:
                "if not nil, must be an integer greater than or equal to 0 and less than 100"
-           } = Mold.prep!(%Mold.Int{gte: 0, lt: 100, nil_ok?: true})
+           } = Mold.prep!(mold)
 
-    # Or you can use your own
+    # you can also supply a custom error message
     custom_error_message = "gotta be from 0-99 or null"
 
     assert %Mold.Int{error_message: ^custom_error_message} =
+             mold =
              Mold.prep!(%Mold.Int{
                gte: 0,
                lt: 100,
@@ -53,47 +103,50 @@ defmodule Mold.MoldTest do
                error_message: custom_error_message
              })
 
-    # Let's prep and use a valid mold for describing a user for a music+health+pets app
-    user_mold = %Mold.Rec{
-      required: %{
-        "first_name" => %Mold.Str{},
-        "last_name" => %Mold.Str{},
-        "middle_initial" => %Mold.Str{nil_ok?: true, max: 1},
-        # all molds have a :but field that allows for custom logic
-        "date_of_birth" => %Mold.Str{
-          but: fn it -> match?({:ok, _}, Date.from_iso8601(it)) end,
-          error_message: "must be formatted yyyy-mm-dd"
-        },
-        "id" => %Mold.Str{
-          regex: ~r/^[0-f]{5}$/,
-          error_message: "must be a a length 5 hex string"
-        },
-        "lucky_numbers" => %Mold.Lst{of: %Mold.Int{}, min: 3}
-      },
-      optional: %{
-        "gender" => %Mold.Str{one_of: ["male", "female", "non-binary"], nil_ok?: true},
-        "temperature" => %Mold.Dec{gt: 0},
-        "pets" => %Mold.Lst{
-          of: %Mold.Rec{
-            required: %{
-              "name" => %Mold.Str{},
-              "species" => %Mold.Str{},
-              "is_rescue" => %Mold.Boo{}
-            }
-          }
-        },
-        "favorite_songs_by_genre" => %Mold.Dic{
-          keys: %Mold.Str{min: 4},
-          vals: %Mold.Rec{
-            required: %{"artist" => %Mold.Str{}, "title" => %Mold.Str{}},
+    assert {:error, ^custom_error_message} = Mold.exam(mold, 101)
+  end
+
+  test "A mold that uses all the types" do
+    songs_by_genre_mold =
+      dic(
+        keys: str(min: 4),
+        vals:
+          rec(
+            required: %{"artist" => str(), "title" => str()},
             optional: %{
-              "year" => %Mold.Int{gte: 1900, lte: 2025}
+              "year" => int(gte: 1900, lte: 2025)
             }
-          }
+          )
+      )
+
+    user_mold =
+      rec(
+        required: %{
+          "first_name" => str(),
+          "last_name" => str(),
+          "middle_initial" => str(nil_ok?: true, max: 1),
+          # all molds have a :but field that allows for custom logic
+          "date_of_birth" =>
+            str(
+              but: fn it -> match?({:ok, _}, Date.from_iso8601(it)) end,
+              error_message: "must be formatted yyyy-mm-dd"
+            ),
+          "id" =>
+            str(
+              regex: ~r/^[0-f]{5}$/,
+              error_message: "must be a a length 5 hex string"
+            ),
+          "lucky_numbers" => lst(of: int(), min: 3)
         },
-        "anything_else" => %Mold.Any{}
-      }
-    }
+        optional: %{
+          "gender" => str(one_of: ["male", "female", "non-binary"], nil_ok?: true),
+          "temperature" => dec(gt: 0),
+          "pets" =>
+            lst(of: rec(required: %{"name" => str(), "species" => str(), "is_rescue" => boo()})),
+          "favorite_songs_by_genre" => songs_by_genre_mold,
+          "anything_else" => any()
+        }
+      )
 
     # prep! recusively preps nested molds
     user_mold = Mold.prep!(user_mold)
@@ -117,9 +170,6 @@ defmodule Mold.MoldTest do
       }
     }
 
-    # Call Mold.exam\2 to see if data is valid
-    # It returns :ok or an error-tuple
-    # When data is valid
     assert :ok = Mold.exam(user_mold, user)
 
     # An errors when data has invalid top-level fields
@@ -218,6 +268,7 @@ defmodule Mold.MoldTest do
     # Let's prep and use a valid mold for describing a user for a music+health+pets app
     pet_mold = rec(required: %{"name" => str(), "species" => str(), "is_rescue" => boo()})
 
+    # A Dic (short for "Dictionary") describes a hash map
     song_by_genre_mold =
       dic(
         keys: str(min: 4),
@@ -259,7 +310,7 @@ defmodule Mold.MoldTest do
     # prep! recusively preps nested molds
     user_mold = Mold.prep!(user_mold)
 
-    user = %{
+    valid_user = %{
       "first_name" => "Cornelius",
       "last_name" => "Adoab",
       "middle_initial" => "R",
@@ -278,14 +329,11 @@ defmodule Mold.MoldTest do
       }
     }
 
-    # Call Mold.exam\2 to see if data is valid
-    # It returns :ok or an error-tuple
-    # When data is valid
-    assert :ok = Mold.exam(user_mold, user)
+    assert :ok = Mold.exam(user_mold, valid_user)
 
     # An errors when data has invalid top-level fields
     invalid_user =
-      Map.merge(user, %{
+      Map.merge(valid_user, %{
         "first_name" => nil,
         "lucky_numbers" => [1, 2],
         "gender" => "woman",
@@ -305,7 +353,7 @@ defmodule Mold.MoldTest do
 
     # error when data has invalid nested fields
     invalid_user =
-      user
+      valid_user
       |> Map.put("lucky_numbers", ["seven", 2, "3.14"])
       |> update_in(["pets"], fn pets ->
         ["Steve", %{"name" => "Larry", "species" => true} | pets]
@@ -330,7 +378,7 @@ defmodule Mold.MoldTest do
 
     # error when Dic[tionary] keys are invalid
     invalid_user =
-      put_in(user, ["favorite_songs_by_genre", "rap"], %{
+      put_in(valid_user, ["favorite_songs_by_genre", "rap"], %{
         "group" => "Outkast",
         "title" => "Elevators"
       })
