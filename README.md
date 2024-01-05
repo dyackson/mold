@@ -2,7 +2,12 @@
 
 **A validator for decoded json**
 
-## Examples
+This project is heavily influenced by the excellent library [Norm](https://
+hexdocs.pm/norm/Norm.html). It's intended for a more specfic use case. Mold
+can only validate Elixir data structures that have been parsed from JSON by
+libraries like [Jason](https://hexdocs.pm/jason/Jason.html). You may want to
+Mold instead of Norm if you intend to expose error messages to api clients or
+end-users.
 
 ### Basic usage
 
