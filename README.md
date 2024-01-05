@@ -31,10 +31,10 @@ invalid_data = %{"my_int" => -1, "my_str" => "bla", "my_lst" => ["a", 2, "c"]}
 {:error, error_map} = Mold.exam(mold, invalid_data)
 
 error_map == %{
-         "my_int" => "must be an integer greater than or equal to 0",
-         "my_str" => "must be one of these strings (with matching case): \"foo\", \"bar\"",
-         "my_lst" => %{1 => "must be a string"}
-       }
+ "my_int" => "must be an integer greater than or equal to 0",
+ "my_str" => "must be one of these strings (with matching case): \"foo\", \"bar\"",
+ "my_lst" => %{1 => "must be a string"}
+}
 ```
 
 ### Macros for creating molds with fewer keystrokes
