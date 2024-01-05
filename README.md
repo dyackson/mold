@@ -1,12 +1,11 @@
 # Mold
 
-**A validator for decoded json**
+**A validator for decoded JSON**
 
-This project is heavily influenced by the excellent library [Norm](https://hexdocs.pm/norm/Norm.html).
-It's intended for a more specfic use case.
-Mold can only validate Elixir data structures that have been parsed from JSON by
-libraries like [Jason](https://hexdocs.pm/jason/Jason.html).
-Mold may be more useful that Norm if you intend to expose error messages to api clients or end-users.
+This project is heavily influenced by the excellent library [Norm](https://hexdocs.pm/norm/Norm.html),
+but is intended for a more specific use case -- validating JSON payloads and providing helpful error messages.
+
+Mold only validates values that resemble JSON, for example, a value decoded with the [Jason](https://hexdocs.pm/jason/Jason.html) library.
 
 ### Basic usage
 
@@ -72,23 +71,23 @@ created_with_macros == created_without_macros
 
 ```elixir
 Mold.exam(%Mold.Int{}, 1)
-# ** (Mold.Error) you must call Mold.prep/1 on the mold before calling Mold.exam/2
+# ** (Mold.Error) you must call Mold.prep!/1 on the mold before calling Mold.exam/2
 
-# Mold.prep!\1 ensures that you're using the library correctly.
+# Mold.prep!/1 ensures that you're using the library correctly.
 Mold.prep!(%Mold.Int{lt: true})
 # ** (Mold.Error) :lt must be an integer
 
-# Mold.prep! prevents you from creating a mold that can't be satisfied
+# Mold.prep!/1 prevents you from creating a mold that can't be satisfied
 Mold.prep!(%Mold.Rec{required: %{"my_int" => %Mold.Int{gt: 4, lt: 1}}})
 # ** (Mold.Error) :gt must be less than :lt
 ```
 
 ### Default error messages can be understood by an end user
 Mold generates error messages for all mold structs based on their parameters.
-The conflated demo at the end of the README for examples.
+The contrived demo at the end of the README for examples.
 
 ```elixir
-# Mold.prep!\1 pre-computes error messages
+# Mold.prep!/1 pre-computes error messages
 mold = %Mold.Int{gte: 0, lt: 100, nil_ok?: true}
 
 assert %Mold.Int{
@@ -118,7 +117,7 @@ assert {:error, ^custom_error_message} = Mold.exam(mold, -1)
 {:error, ^custom_error_message = Mold.exam(mold, -1)
 ```
 
-### A conflated example that shows a lot of features
+### A contrived example that shows a lot of features
 
 ```elixir
 pet_mold = rec(required: %{"name" => str(), "species" => str(), "is_rescue" => boo()})
@@ -162,7 +161,7 @@ user_mold =
     }
   )
 
-# prep! recusively preps nested molds
+# prep!/1 recusively preps nested molds
 user_mold = Mold.prep!(user_mold)
 
 valid_user = %{
